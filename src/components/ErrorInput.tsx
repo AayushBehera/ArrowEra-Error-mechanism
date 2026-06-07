@@ -19,30 +19,30 @@ export function ErrorInput({ onAnalyze }: Props) {
   }
 
   return (
-    <section className="space-y-4 animate-fade-in-up">
+    <section className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-3">
-        <label className="block text-sm font-medium text-gray-300">
-          Paste your error message or stack trace
+        <label className="block text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+          Paste an error or stack trace
         </label>
         <textarea
-          className="w-full min-h-[160px] rounded-xl border border-gray-700/60 bg-gray-900/60 px-4 py-3 text-sm font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 resize-y transition"
-          placeholder={"TypeError: Cannot read properties of undefined (reading 'map')\n    at UserList (src/components/UserList.tsx:14:22)\n    at renderWithHooks ..."}
+          className="w-full min-h-[140px] rounded-lg border border-neutral-700 bg-black px-3 py-2.5 text-xs font-mono text-neutral-200 placeholder-neutral-600 focus:outline-none focus:ring-1 focus:ring-neutral-400 resize-y transition"
+          placeholder={"TypeError: Cannot read properties of undefined (reading 'map')\n    at UserList (src/components/UserList.tsx:14:22)"}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           spellCheck={false}
         />
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             type="submit"
             disabled={!value.trim()}
-            className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
+            className="flex-1 px-4 py-2 rounded-lg bg-neutral-100 text-black text-sm font-medium hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
-            Analyze Error
+            Analyze
           </button>
           <button
             type="button"
             onClick={() => setValue('')}
-            className="px-4 py-2.5 rounded-lg border border-gray-700 text-gray-400 text-sm hover:text-gray-200 hover:border-gray-500 transition-colors"
+            className="px-3 py-2 rounded-lg border border-neutral-700 text-neutral-400 text-sm hover:text-neutral-100 hover:border-neutral-500 transition-colors"
           >
             Clear
           </button>
@@ -51,16 +51,16 @@ export function ErrorInput({ onAnalyze }: Props) {
 
       {/* Example pills */}
       <div className="space-y-2">
-        <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
           Try an example
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {examples.map((ex) => (
             <button
               key={ex.label}
               type="button"
               onClick={() => handleExample(ex.text)}
-              className="px-3 py-1.5 rounded-full text-xs border border-gray-700/60 bg-gray-800/40 text-gray-400 hover:text-indigo-300 hover:border-indigo-500/40 hover:bg-indigo-950/30 transition-colors"
+              className="px-2.5 py-1 rounded-full text-[11px] border border-neutral-800 bg-neutral-900 text-neutral-400 hover:text-neutral-100 hover:border-neutral-500 transition-colors"
             >
               {ex.label}
             </button>

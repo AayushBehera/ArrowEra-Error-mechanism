@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '@xyflow/react/dist/style.css';
 
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
@@ -17,22 +18,22 @@ body,
 
 body {
   margin: 0;
-  background-color: #0a0a0f;
-  color: #e5e7eb;
+  background-color: #000000;
+  color: #e5e5e5;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Thin, themed scrollbars */
+/* Thin, monochrome scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #312e81 transparent;
+  scrollbar-color: #3f3f46 transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: #3730a3;
+  background-color: #52525b;
   border-radius: 9999px;
 }
 
@@ -49,4 +50,81 @@ body {
 
 .animate-fade-in-up {
   animation: fade-in-up 0.35s ease-out both;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   React Flow — forced monochrome (black & white) theme
+   ────────────────────────────────────────────────────────────────────────── */
+.react-flow {
+  --xy-background-color: #000000;
+  --xy-edge-stroke: #6b7280;
+  --xy-edge-stroke-selected: #ffffff;
+  --xy-edge-stroke-width: 1.5;
+  --xy-connectionline-stroke: #9ca3af;
+  background-color: #000000;
+}
+
+/* Edges in grayscale; brighten on selection */
+.react-flow__edge-path {
+  stroke: #6b7280;
+}
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #ffffff;
+}
+.react-flow__arrowhead {
+  fill: #6b7280;
+}
+
+/* Connection handles — small white-bordered dots */
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background: #000000;
+  border: 1.5px solid #a1a1aa;
+  border-radius: 9999px;
+}
+.react-flow__handle:hover {
+  border-color: #ffffff;
+}
+
+/* Controls */
+.react-flow__controls {
+  border: 1px solid #27272a;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: none;
+}
+.react-flow__controls-button {
+  background: #0a0a0a;
+  border-bottom: 1px solid #27272a;
+  color: #e5e5e5;
+  fill: #e5e5e5;
+}
+.react-flow__controls-button:hover {
+  background: #1c1c1f;
+}
+.react-flow__controls-button svg {
+  fill: #d4d4d8;
+}
+
+/* Minimap */
+.react-flow__minimap {
+  background-color: #0a0a0a;
+  border: 1px solid #27272a;
+  border-radius: 8px;
+}
+
+/* Attribution badge — keep neutral */
+.react-flow__attribution {
+  background: rgba(0, 0, 0, 0.6);
+  color: #52525b;
+}
+.react-flow__attribution a {
+  color: #71717a;
+}
+
+/* Background dots */
+.react-flow__background {
+  background-color: #000000;
 }

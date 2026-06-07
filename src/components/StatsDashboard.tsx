@@ -21,46 +21,25 @@ export function StatsDashboard({ entries }: Props) {
   )
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <StatCard
-        label="Total Analyzed"
-        value={String(entries.length)}
-        accent="text-indigo-400"
-      />
+    <div className="grid grid-cols-2 gap-2">
+      <StatCard label="Analyzed" value={String(entries.length)} />
       <StatCard
         label="Critical/High"
         value={String(severityCounts.critical + severityCounts.high)}
-        accent="text-red-400"
       />
-      <StatCard
-        label="Top Language"
-        value={topLang ? topLang[0] : '—'}
-        accent="text-emerald-400"
-      />
-      <StatCard
-        label="Avg Confidence"
-        value={`${avgConfidence}%`}
-        accent="text-yellow-400"
-      />
+      <StatCard label="Top Language" value={topLang ? topLang[0] : '—'} />
+      <StatCard label="Avg Confidence" value={`${avgConfidence}%`} />
     </div>
   )
 }
 
-function StatCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string
-  value: string
-  accent: string
-}) {
+function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-gray-800/40 bg-gray-900/30 px-3 py-3 space-y-0.5">
-      <p className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">
+    <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2.5 space-y-0.5">
+      <p className="text-[10px] uppercase tracking-wider text-neutral-500 font-medium">
         {label}
       </p>
-      <p className={`text-lg font-bold ${accent}`}>{value}</p>
+      <p className="text-lg font-bold text-neutral-100 truncate">{value}</p>
     </div>
   )
 }
