@@ -25,7 +25,7 @@ export function ObservabilityPanel(){
   if(failed?.status==='rejected')setError(failed.reason instanceof Error?failed.reason.message:'Observability refresh failed.')
   setLoading(false)
  }
- useEffect(()=>{void refresh('render')},[])
+ useEffect(()=>{const frame=requestAnimationFrame(()=>{void refresh('render')});return()=>cancelAnimationFrame(frame)},[])\n // eslint-disable-next-line react-hooks/exhaustive-deps
  const deployments=Array.isArray(deployment?.deployments)?deployment.deployments as Record<string,unknown>[]:[]
  return <div className="space-y-4">
   <div className="flex flex-wrap items-center justify-between gap-3"><div><p className={label}>Runtime intelligence</p><h1 className="mt-1 text-xl font-semibold text-white">Observability & deployment providers</h1><p className="mt-1 text-xs text-slate-500">Correlate application requests, provider events and deployment history.</p></div><button onClick={()=>void refresh()} disabled={loading} className="rounded-lg border border-slate-700 px-3 py-2 text-[10px] font-semibold text-slate-300">{loading?'Refreshing…':'Refresh signals'}</button></div>
