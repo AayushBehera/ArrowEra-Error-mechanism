@@ -139,7 +139,7 @@ export function AiAssistant() {
         </span>
         <span className="text-left">
           <span className="block text-xs font-semibold tracking-wide">AI Copilot</span>
-          <span className="block text-[9px] text-violet-200/60">{status?.configured ? 'Ready to assist' : 'Configure API key'}</span>
+          <span className="block text-[9px] text-violet-200/60">{status?.configured ? 'Configured · inference not yet tested' : 'Configure API key'}</span>
         </span>
       </button>
     </>
