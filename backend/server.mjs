@@ -290,6 +290,27 @@ async function inspectGithubRepository(repositoryUrl) {
   }
 }
 
+
+function validateDeploymentUrl(value) {
+  if (typeof value !== 'string' || value.length > 2000) throw new Error('Enter a valid deployment URL.')
+  let url
+  try { url = new URL(value.trim()) } catch { throw new Error('Deployment URL is invalid.') }
+  if (url.protocol !== 'https:' || !url.hostname || url.username || url.password) throw new Error('Deployment health checks require a public HTTPS URL without embedded credentials.')
+  const host = url.hostname.toLowerCase()
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host === '127.0.0.1' || host === '::1' || /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host) || host === '169.254.169.254') throw new Error('Private and local deployment addresses cannot be checked.')
+  return url.toString()
+}
+
+async function checkDeployment(deploymentUrl) {
+  const started = Date.now()
+  try {
+    const response = await fetch(deploymentUrl, { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(8000), headers: { 'user-agent': 'ArrowEra-Deployment-Health-Check/1.0' } })
+    return { url: deploymentUrl, status: response.status, healthy: response.status >= 200 && response.status < 400, latencyMs: Date.now() - started, checkedAt: new Date().toISOString(), redirected: response.status >= 300 && response.status < 400 }
+  } catch (error) {
+    return { url: deploymentUrl, status: null, healthy: false, latencyMs: Date.now() - started, checkedAt: new Date().toISOString(), error: error?.name === 'TimeoutError' ? 'Health check timed out after 8 seconds.' : 'Deployment URL could not be reached.' }
+  }
+}
+
 async function serveStatic(pathname, response) {
   let decodedPath
   try {
@@ -424,6 +445,60 @@ export function createAppServer() {
       } catch (error) {
         console.error('Analysis failed:', error)
         sendJson(response, 500, { error: 'Analysis could not be completed.' })
+      }
+      return
+    }
+
+
+
+    if (pathname === '/api/project/inspect' && request.method === 'POST') {
+      if (isRateLimited(request, 'project-inspect', 8)) {
+        sendJson(response, 429, { error: 'Project refresh limit reached. Retry shortly.' })
+        return
+      }
+      const parsed = await readJson(request)
+      if (parsed.error) {
+        sendJson(response, parsed.error.status, { error: parsed.error.message })
+        return
+      }
+      try {
+        const repository = await inspectGithubRepository(parsed.value?.repositoryUrl)
+        const deploymentUrl = parsed.value?.deploymentUrl ? validateDeploymentUrl(parsed.value.deploymentUrl) : null
+        const apiRoot = 'https://api.github.com/repos/' + repository.repository
+        const requests = await Promise.allSettled([
+          githubApi(apiRoot + '/actions/runs?per_page=8'),
+          githubApi(apiRoot + '/commits?per_page=8'),
+          githubApi(apiRoot + '/pulls?state=open&per_page=8'),
+          githubApi(apiRoot + '/branches?per_page=30'),
+          deploymentUrl ? checkDeployment(deploymentUrl) : Promise.resolve(null),
+        ])
+        const value = (index, fallback) => requests[index].status === 'fulfilled' ? requests[index].value : fallback
+        const runsPayload = value(0, {})
+        const commitsPayload = value(1, [])
+        const pullsPayload = value(2, [])
+        const branchesPayload = value(3, [])
+        const workflows = Array.isArray(runsPayload.workflow_runs) ? runsPayload.workflow_runs.slice(0, 8).map((run) => ({ id: Number(run.id), name: String(run.name || run.display_title || 'Workflow'), branch: String(run.head_branch || 'unknown'), status: String(run.status || 'unknown'), conclusion: run.conclusion || null, createdAt: run.created_at, url: run.html_url })) : []
+        const commits = Array.isArray(commitsPayload) ? commitsPayload.slice(0, 8).map((commit) => ({ sha: String(commit.sha || '').slice(0, 7), message: String(commit.commit?.message || '').split('\n')[0].slice(0, 180), author: String(commit.commit?.author?.name || commit.author?.login || 'Unknown'), date: commit.commit?.author?.date || null, url: commit.html_url })) : []
+        const pullRequests = Array.isArray(pullsPayload) ? pullsPayload.slice(0, 8).map((pull) => ({ number: Number(pull.number), title: String(pull.title || 'Pull request'), branch: String(pull.head?.ref || ''), updatedAt: pull.updated_at, url: pull.html_url })) : []
+        const branches = Array.isArray(branchesPayload) ? branchesPayload.slice(0, 30).map((branch) => branch.name) : []
+        sendJson(response, 200, {
+          repository: {
+            name: repository.repository, url: repository.url, description: repository.description,
+            defaultBranch: repository.defaultBranch, primaryLanguage: repository.primaryLanguage,
+            languages: repository.languages, stars: repository.stars, forks: repository.forks,
+            openIssues: repository.openIssues, license: repository.license, archived: repository.archived,
+            lastPush: repository.lastPush, fileCount: repository.fileCount, treeTruncated: repository.treeTruncated,
+            topLevelDirectories: repository.topLevelDirectories, workflowFiles: repository.workflowFiles,
+            inspectedFiles: repository.inspectedFiles.map((file) => ({ path: file.path, content: file.content })),
+          },
+          workflows, commits, pullRequests, branches,
+          deployment: value(4, null),
+          checks: { workflows: requests[0].status === 'fulfilled' ? 'available' : 'unavailable', commits: requests[1].status === 'fulfilled' ? 'available' : 'unavailable', pullRequests: requests[2].status === 'fulfilled' ? 'available' : 'unavailable', branches: requests[3].status === 'fulfilled' ? 'available' : 'unavailable' },
+          inspectedAt: new Date().toISOString(),
+        })
+      } catch (error) {
+        const status = error?.status
+        sendJson(response, status === 404 ? 404 : 400, { error: status === 404 ? 'GitHub repository not found or not accessible. Private repositories require GITHUB_TOKEN.' : error instanceof Error ? error.message : 'Project inspection failed.' })
       }
       return
     }
