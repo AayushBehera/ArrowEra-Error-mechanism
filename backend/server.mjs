@@ -116,24 +116,25 @@ async function serveStatic(pathname, response, method) {
   }
 
   const relativePath = decodedPath === '/' ? 'index.html' : decodedPath.replace(/^\/+/, '')
-  let target = resolve(DIST, relativePath)
+  const target = resolve(DIST, relativePath)
   if (target !== DIST && !target.startsWith(DIST + sep)) {
     sendJson(response, 403, { error: 'Forbidden.' }, method)
     return
   }
 
   try {
-    const details = await stat(target)
-    if (details.isDirectory()) target = resolve(target, 'index.html')
-    const isHtml = target.endsWith('index.html')
-    const isHashedAsset = /-[A-Za-z0-9_-]{8,}\./.test(target)
+    let resolvedTarget = target
+    const details = await stat(resolvedTarget)
+    if (details.isDirectory()) resolvedTarget = resolve(resolvedTarget, 'index.html')
+    const isHtml = resolvedTarget.endsWith('index.html')
+    const isHashedAsset = /-[A-Za-z0-9_-]{8,}\./.test(resolvedTarget)
     await writeStaticFile(
-      target,
+      resolvedTarget,
       response,
       method,
       isHtml ? 'no-cache' : isHashedAsset ? 'public, max-age=31536000, immutable' : 'public, max-age=3600',
     )
-  } catch (error) {
+  } catch {
     // Missing asset requests must not silently receive index.html with a 200 response.
     if (extname(relativePath) || relativePath.startsWith('assets/')) {
       sendJson(response, 404, { error: 'Static asset not found.' }, method)
@@ -227,7 +228,7 @@ if (isDirectRun) {
   const server = createAppServer()
 
   server.listen(port, host, () => {
-    console.log(`ArrowEra server listening on http://${host}:${port}`)
+    console.log(\`ArrowEra server listening on http://\${host}:\${port}\`)
   })
 
   const shutdown = () => {
