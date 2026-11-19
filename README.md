@@ -38,6 +38,7 @@ The Vite development server proxies `/api` requests to the backend on port 3001.
 | `npm run typecheck` | Run TypeScript checks |
 | `npm run lint` | Run ESLint |
 | `npm test` | Run analyzer and backend integration tests |
+| `npm run smoke` | Verify built static assets and API against the production server |
 
 ## API
 
@@ -71,7 +72,7 @@ The service binds to `0.0.0.0` and uses Railway's `PORT` environment variable. N
 
 ## CI and security automation
 
-GitHub Actions validates type-checking, lint, tests and the production build on pushes and pull requests. The build output is uploaded as a short-lived artifact. CodeQL scans JavaScript/TypeScript, and Dependabot checks npm and GitHub Actions dependencies weekly. GitHub Dependency Review can be enabled after turning on the repository Dependency Graph in Settings → Security.
+GitHub Actions validates type-checking, lint, tests, production build and a production-server smoke test on pushes and pull requests. The build output is uploaded as a short-lived artifact. CodeQL scans JavaScript/TypeScript, and Dependabot checks npm and GitHub Actions dependencies weekly. GitHub Dependency Review can be enabled after turning on the repository Dependency Graph in Settings → Security.
 
 ## Data and privacy
 

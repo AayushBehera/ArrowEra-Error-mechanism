@@ -114,3 +114,57 @@ test('workflow jobs endpoint validates repository coordinates', async () => {
     assert.match((await response.json()).error, /owner\/name/)
   })
 })
+
+
+test('POST /api/analyze rejects malformed JSON', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/analyze`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{invalid',
+    })
+    assert.equal(response.status, 400)
+    assert.match((await response.json()).error, /valid JSON/)
+  })
+})
+
+test('POST /api/analyze rejects declared bodies over 64 KB', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/analyze`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ input: 'x'.repeat(70 * 1024) }),
+    })
+    assert.equal(response.status, 413)
+  })
+})
+
+test('POST /api/analyze rejects inputs over 50,000 characters', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/analyze`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ input: 'x'.repeat(50_001) }),
+    })
+    assert.equal(response.status, 413)
+  })
+})
+
+test('POST /api/analyze rate limits a client after 30 requests per minute', async () => {
+  await withServer(async (baseUrl) => {
+    const headers = {
+      'content-type': 'application/json',
+      'x-forwarded-for': '198.51.100.44',
+    }
+    let lastResponse
+    for (let index = 0; index < 31; index += 1) {
+      lastResponse = await fetch(`${baseUrl}/api/analyze`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ input: 'TypeError: x is undefined' }),
+      })
+    }
+    assert.equal(lastResponse.status, 429)
+    assert.match((await lastResponse.json()).error, /Too many/)
+  })
+})
