@@ -189,7 +189,9 @@ export default function App() {
         </header>
 
         <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 xl:px-8">
-          {page !== 'errors' ? (
+          {page === 'repository' ? (
+            <RepositoryAudit />
+          ) : page !== 'errors' ? (
             <OperationsWorkspace
               page={page}
               overview={overview}
