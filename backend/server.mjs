@@ -286,6 +286,9 @@ async function inspectGithubRepository(repositoryUrl) {
     fileCount: entries.filter((entry) => entry.type === 'blob').length,
     topLevelDirectories: directories,
     workflowFiles: entries.filter((entry) => /^\.github\/workflows\/[^/]+\.ya?ml$/i.test(entry.path)).map((entry) => entry.path).slice(0, 20),
+    testFiles: entries.filter((entry) => entry.type === 'blob' && /(^|\/)(__tests__|tests?|spec)\//i.test(entry.path) || entry.type === 'blob' && /\.(test|spec)\.[cm]?[jt]sx?$/i.test(entry.path)).map((entry) => entry.path).slice(0, 30),
+    dependencyFiles: entries.filter((entry) => entry.type === 'blob' && /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|requirements\.txt|poetry\.lock|Pipfile\.lock|go\.sum|Cargo\.lock)$/i.test(entry.path)).map((entry) => entry.path).slice(0, 20),
+    deploymentFiles: entries.filter((entry) => entry.type === 'blob' && /(^|\/)(Dockerfile|docker-compose\.ya?ml|compose\.ya?ml|render\.yaml|vercel\.json|fly\.toml|Procfile)$/i.test(entry.path)).map((entry) => entry.path).slice(0, 20),
     inspectedFiles: files,
   }
 }
