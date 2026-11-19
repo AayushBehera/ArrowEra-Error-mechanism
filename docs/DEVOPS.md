@@ -39,7 +39,7 @@ Railway production smoke test
 
 CI runs on pull requests targeting main and pushes to main or supported working branches. Its matrix tests Node.js 24.12.0, the minimum version declared by package.json, and the latest Node 24 release.
 
-Each matrix job installs from package-lock.json with npm ci, runs type-checking, lint, tests, builds the app, and runs scripts/smoke-test.mjs. The smoke test starts the actual production server and checks the health endpoint, compiled frontend, favicon, and analysis API.
+Each matrix job installs from package-lock.json with npm ci, runs type-checking, lint, tests, builds the app, and runs scripts/smoke-test.sh. The smoke test starts the actual production server and checks the health endpoint, compiled frontend, favicon, and analysis API.
 
 The latest Node 24 job uploads dist/ as the arrowera-production-dist artifact for seven days. Railway performs its own build during deployment.
 
@@ -123,7 +123,7 @@ npm run typecheck
 npm run lint
 npm test
 npm run build
-node scripts/smoke-test.mjs
+bash scripts/smoke-test.sh
 ~~~
 
 Use npm install only when intentionally changing dependencies. Review and commit package.json and package-lock.json together.
