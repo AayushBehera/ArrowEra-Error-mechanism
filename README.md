@@ -18,7 +18,7 @@ The engine detects the language, matches it against 18 built-in rules, and produ
 - **Deterministic analysis** — no API calls, no network, runs entirely in the browser
 - **Transparent reasoning** — every step of the engine's logic is shown with evidence
 - **Multi-language support** — JavaScript, TypeScript, Python, Java, and network errors
-- **Confidence scoring** — pattern matches and keyword signals normalized to a 0-98% scale
+- **Heuristic evidence scoring** — pattern matches and supporting keywords produce a bounded 0-98 score; this is not a calibrated probability
 - **Severity classification** — Critical / High / Medium / Low with visual badges
 - **Fix suggestions** — concrete code snippets for each diagnosis
 - **History** — localStorage-backed history with search and delete
@@ -82,9 +82,9 @@ src/
 ## How the Reasoning Engine Works
 
 1. **Language Detection** — heuristic signals (stack trace patterns, file extensions) are scored to identify the source language.
-2. **Rule Scoring** — each rule's `patterns` (strong: 30 pts each) and `keywords` (weak: 5 pts each) are matched against the input.
+2. **Rule Scoring** — each rule's `patterns` (strong: 30 pts each) and `keywords` (supporting: 5 pts each) are matched against the input. A keyword-only match requires at least two distinct keywords, and keyword contribution is capped at three matches.
 3. **Language Affinity** — rules whose language matches the detected input get a +15 boost, breaking cross-category ties toward the right language.
-4. **Confidence Normalization** — raw scores are mapped to a 0-98% confidence scale.
+4. **Heuristic Score** — raw evidence scores are mapped to a bounded 0-98 display score. This is a ranking aid, not a statistically calibrated probability.
 5. **Reasoning Chain** — a step-by-step explanation is generated showing what the engine observed and concluded.
 6. **Ranking** — rules are ranked by total score. The top match becomes the primary diagnosis, the next 3 are alternatives.
 

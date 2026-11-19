@@ -63,7 +63,7 @@ function DiagnosisCard({ diagnosis, isPrimary }: { diagnosis: Diagnosis; isPrima
 
       {/* Confidence */}
       <div className="space-y-1">
-        <p className="text-xs text-gray-500 font-medium">Confidence</p>
+        <p className="text-xs text-gray-500 font-medium">Heuristic score</p>
         <ConfidenceMeter value={confidence} />
       </div>
 

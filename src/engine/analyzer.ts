@@ -28,9 +28,10 @@ const languageSignals: LanguageSignal[] = [
   { language: 'python', weight: 3, pattern: /Traceback \(most recent call last\)/i },
   { language: 'python', weight: 2, pattern: /File ".*\.py"/i },
   { language: 'python', weight: 1, pattern: /^\s*(def |class |import |from )/m },
-  { language: 'javascript', weight: 2, pattern: /at .*\(.*\.(?:js|ts|tsx|jsx):\d+:\d+\)/i },
+  { language: 'javascript', weight: 2, pattern: /at .*\(.*\.(?:js|jsx|mjs|cjs):\d+:\d+\)/i },
   { language: 'javascript', weight: 2, pattern: /at Object\.<anonymous>/i },
-  { language: 'typescript', weight: 2, pattern: /\.ts:\d+:\d+/i },
+  { language: 'typescript', weight: 3, pattern: /at .*\(.*\.(?:ts|tsx|mts|cts):\d+:\d+\)/i },
+  { language: 'typescript', weight: 2, pattern: /\.(?:ts|tsx|mts|cts):\d+(?::\d+)?/i },
   { language: 'typescript', weight: 1, pattern: /(?:interface|type alias|TS\d{4})/i },
   { language: 'java', weight: 2, pattern: /at .*\(.*\.java:\d+\)/i },
   { language: 'java', weight: 1, pattern: /Exception in thread/i },
@@ -103,9 +104,12 @@ function scoreRule(rule: Rule, input: string, language: Language): RuleScore {
     }
   }
 
-  // pattern match is strong (30 pts each), keyword is weak (5 pts each)
+  // Pattern matches are strong (30 pts each). Keywords are supporting
+  // evidence only: a lone generic word must not create a diagnosis, and
+  // repeated generic terms are capped to limit correlated-signal inflation.
   const patternScore = matchedPatterns.length * 30
-  const keywordScore = matchedKeywords.length * 5
+  const hasKeywordEvidence = matchedPatterns.length > 0 || matchedKeywords.length >= 2
+  const keywordScore = hasKeywordEvidence ? Math.min(matchedKeywords.length, 3) * 5 : 0
   // Language affinity only rewards rules that already matched — it must never
   // manufacture a diagnosis out of nothing.
   const languageScore =
@@ -125,7 +129,7 @@ function scoreRule(rule: Rule, input: string, language: Language): RuleScore {
 
 function computeConfidence(score: RuleScore): number {
   const raw = score.patternScore + score.keywordScore + score.languageScore
-  // Normalize: 30 = ~70%, 60+ = 90%+, 100+ caps at 98
+  // This is a bounded heuristic evidence score, not a calibrated probability.
   const normalized = Math.min(98, Math.round(40 + (raw / 100) * 58))
   return raw === 0 ? 0 : normalized
 }
@@ -197,8 +201,8 @@ function buildReasoning(
     ...(primary.languageScore > 0 ? ['language affinity'] : []),
   ]
   steps.push({
-    label: 'Confidence Assessment',
-    detail: `Confidence: ${conf}% based on ${evidenceParts.join(', ')}.`,
+    label: 'Evidence Score',
+    detail: `Heuristic evidence score: ${conf}% based on ${evidenceParts.join(', ')}.`,
   })
 
   if (altCount > 0) {
@@ -237,7 +241,12 @@ export function analyze(input: string): AnalysisResult {
     .sort((a, b) => {
       const totalA = a.patternScore + a.keywordScore + a.languageScore
       const totalB = b.patternScore + b.keywordScore + b.languageScore
-      return totalB - totalA
+      return (
+        totalB - totalA ||
+        b.patternScore - a.patternScore ||
+        b.keywordScore - a.keywordScore ||
+        a.rule.id.localeCompare(b.rule.id)
+      )
     })
 
   const primaryScore = scored[0] ?? null

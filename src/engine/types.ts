@@ -47,7 +47,7 @@ export interface ReasoningStep {
 
 export interface Diagnosis {
   rule: Rule
-  /** 0-100 normalized confidence for this rule. */
+  /** 0-100 heuristic evidence score for this rule; not a calibrated probability. */
   confidence: number
   matchedPatterns: string[]
   matchedKeywords: string[]
@@ -71,4 +71,6 @@ export interface HistoryEntry {
   language: Language
   confidence: number
   analyzedAt: number
+  /** Optional full snapshot; absent on entries saved by older versions. */
+  result?: AnalysisResult
 }

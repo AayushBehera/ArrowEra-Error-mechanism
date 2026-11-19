@@ -15,7 +15,7 @@ export const rules: Rule[] = [
       /Cannot read propert(y|ies) of (undefined|null)/i,
       /TypeError:.*is (undefined|null)/i,
     ],
-    keywords: ['undefined', 'null', 'TypeError', '.ts', '.js'],
+    keywords: ['undefined', 'null', 'TypeError'],
     summary: 'Attempted to access a property on a null or undefined value.',
     explanation:
       'This occurs when code assumes a variable holds an object but at runtime it is null or undefined. Common causes include uninitialized state, missing API responses, or incorrect optional chaining.',
