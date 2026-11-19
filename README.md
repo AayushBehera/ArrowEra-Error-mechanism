@@ -71,7 +71,7 @@ The service binds to `0.0.0.0` and uses Railway's `PORT` environment variable. N
 
 ## CI and security automation
 
-GitHub Actions validates type-checking, lint, tests and the production build on pushes and pull requests. The build output is uploaded as a short-lived artifact. CodeQL scans JavaScript/TypeScript, and Dependabot checks npm and GitHub Actions dependencies weekly. GitHub Dependency Review can be enabled after turning on the repository Dependency Graph in Settings → Security.
+GitHub Actions validates the full application on Node.js 24.12.0 and the latest Node 24 release. Each run performs type-checking, lint, tests, a production build, and a smoke test of the built frontend and backend API. The latest build is uploaded as a short-lived artifact. CodeQL scans JavaScript/TypeScript, Dependency Review checks pull-request dependency changes, and Dependabot checks npm and GitHub Actions updates weekly. Enable the repository Dependency Graph in Settings → Advanced Security for Dependency Review. A production smoke-test workflow can verify the Railway service when the RAILWAY_PUBLIC_URL repository variable is configured.
 
 ## Data and privacy
 
