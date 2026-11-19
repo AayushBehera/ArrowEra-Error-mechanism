@@ -205,3 +205,11 @@ export async function fetchObservabilityLogs(provider: 'render' | 'vercel'): Pro
 export async function fetchRequestTraces(): Promise<{ traces: { traceId: string; method: string; path: string; status: number; durationMs: number; timestamp: string }[]; retention: string }> {
   return readJson(await fetch('/api/observability/traces?limit=60', { cache: 'no-store' }))
 }
+
+export async function dispatchWorkflow(repository: string, workflow: string, ref = 'main'): Promise<{ accepted: boolean; message: string }> {
+  return readJson(await fetch('/api/project/workflows/dispatch', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ repository, workflow, ref }),
+  }))
+}
