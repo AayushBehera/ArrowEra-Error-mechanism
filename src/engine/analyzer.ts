@@ -201,8 +201,8 @@ function buildReasoning(
     ...(primary.languageScore > 0 ? ['language affinity'] : []),
   ]
   steps.push({
-    label: 'Confidence Assessment',
-    detail: `Confidence: ${conf}% based on ${evidenceParts.join(', ')}.`,
+    label: 'Evidence Score',
+    detail: `Heuristic evidence score: ${conf}% based on ${evidenceParts.join(', ')}.`,
   })
 
   if (altCount > 0) {
