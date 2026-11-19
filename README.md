@@ -71,7 +71,7 @@ The service binds to `0.0.0.0` and uses Railway's `PORT` environment variable. N
 
 ## CI and security automation
 
-GitHub Actions validates type-checking, lint, tests and the production build on pushes and pull requests. The build output is uploaded as a short-lived artifact. CodeQL scans JavaScript/TypeScript, Dependency Review checks pull-request dependency changes, and Dependabot checks npm and GitHub Actions dependencies weekly.
+GitHub Actions validates type-checking, lint, tests and the production build on pushes and pull requests. The build output is uploaded as a short-lived artifact. CodeQL scans JavaScript/TypeScript, and Dependabot checks npm and GitHub Actions dependencies weekly. GitHub Dependency Review can be enabled after turning on the repository Dependency Graph in Settings → Security.
 
 ## Data and privacy
 
