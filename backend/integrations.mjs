@@ -56,6 +56,35 @@ export async function handleIntegrationRequest(request, response, url) {
     return true
   }
 
+  if (pathname === '/api/project/workflows/dispatch' && request.method === 'POST') {
+    const token = process.env.GITHUB_TOKEN
+    if (!token) { json(response, 503, { error: 'GITHUB_TOKEN is required for workflow dispatch.' }); return true }
+    let raw = ''
+    for await (const chunk of request) {
+      raw += chunk.toString('utf8')
+      if (raw.length > 16_384) { json(response, 413, { error: 'Workflow dispatch payload is too large.' }); return true }
+    }
+    let input
+    try { input = JSON.parse(raw) } catch { json(response, 400, { error: 'Request body must be valid JSON.' }); return true }
+    const repository = typeof input.repository === 'string' ? input.repository : ''
+    const workflow = typeof input.workflow === 'string' ? input.workflow : ''
+    const ref = typeof input.ref === 'string' ? input.ref : 'main'
+    if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository) || !/^\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml$/.test(workflow) || !/^[A-Za-z0-9_.\/-]{1,120}$/.test(ref) || ref.includes('..')) {
+      json(response, 400, { error: 'Provide a valid owner/name repository, workflow file path and branch ref.' })
+      return true
+    }
+    try {
+      const api = 'https://api.github.com/repos/' + repository + '/actions/workflows/' + workflow.split('/').map(encodeURIComponent).join('/') + '/dispatches'
+      const upstream = await fetch(api, { method: 'POST', headers: { authorization: 'Bearer ' + token, accept: 'application/vnd.github+json', 'content-type': 'application/json', 'x-github-api-version': '2022-11-28', 'user-agent': 'ArrowEra-Workflow-Dispatcher' }, body: JSON.stringify({ ref }), signal: AbortSignal.timeout(12_000) })
+      if (!upstream.ok) {
+        json(response, upstream.status, { error: 'GitHub workflow dispatch returned HTTP ' + upstream.status + '. Confirm the workflow supports workflow_dispatch and GITHUB_TOKEN has Actions: write.' })
+        return true
+      }
+      json(response, 202, { accepted: true, repository, workflow, ref, message: 'Workflow dispatch accepted by GitHub. Refresh the CI/CD run list to see the new execution.' })
+    } catch (error) { json(response, 502, { error: error instanceof Error ? error.message : 'Workflow dispatch failed.' }) }
+    return true
+  }
+
   const jobsMatch = pathname.match(/^\/api\/project\/workflows\/(\d+)\/jobs$/)
   if (jobsMatch && request.method === 'GET') {
     const repository = url.searchParams.get('repository') || process.env.GITHUB_REPOSITORY || ''
