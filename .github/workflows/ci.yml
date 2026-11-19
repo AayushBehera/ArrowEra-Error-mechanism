@@ -37,7 +37,7 @@ jobs:
       - name: Build production application
         run: npm run build
       - name: Smoke-test production server and API
-        run: node scripts/smoke-test.mjs
+        run: bash scripts/smoke-test.sh
       - name: Upload production build artifact
         if: matrix.node-version == '24'
         uses: actions/upload-artifact@v7
