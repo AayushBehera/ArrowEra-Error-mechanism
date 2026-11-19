@@ -10,6 +10,19 @@ This project is a static React, TypeScript, and Vite application. It has no serv
 4. A push to main starts the deployment workflow. That workflow calls the same CI workflow and cannot publish unless both Node.js validation jobs pass.
 5. The deployment job builds the application, uploads dist as a GitHub Pages artifact, deploys it, and checks the published page and favicon over HTTPS.
 
+## One-time repository security setup
+
+The repository owner must enable the dependency graph before the Dependency Review workflow can retrieve the pull request dependency diff:
+
+1. Open repository Settings.
+2. Open Advanced Security.
+3. Enable Dependency graph.
+4. Enable Dependabot alerts and Dependabot security updates where those options are available.
+
+The Dependency Review workflow currently returns HTTP 403 when GitHub does not allow the dependency-review endpoint for the repository. This is a repository security-setting prerequisite, not a reported vulnerable dependency. After enabling the dependency graph, rerun the failed Dependency Review job or push a follow-up commit to trigger the workflow again.
+
+GitHub documents the dependency graph and Dependency Review prerequisites in its [repository security quickstart](https://docs.github.com/en/code-security/getting-started/quickstart-for-securing-your-repository).
+
 ## One-time GitHub Pages setup
 
 The repository owner must enable the Pages publishing source once:
