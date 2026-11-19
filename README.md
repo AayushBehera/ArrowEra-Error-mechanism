@@ -6,10 +6,8 @@ An intelligent error triage and reasoning workbench. Paste any error message or 
 
 Paste an error, click **Analyze Error**, and see the engine work:
 
-```
-TypeError: Cannot read properties of undefined (reading 'map')
-    at UserList (src/components/UserList.tsx:14:22)
-```
+    TypeError: Cannot read properties of undefined (reading 'map')
+        at UserList (src/components/UserList.tsx:14:22)
 
 The engine detects the language, matches it against 18 built-in rules, and produces a full reasoning chain with confidence score and suggested fixes.
 
@@ -35,11 +33,11 @@ The engine detects the language, matches it against 18 built-in rules, and produ
 
 ## Getting Started
 
-```bash
-# Install dependencies
-npm install
+~~~bash
+# Install exact dependencies from the lockfile
+npm ci
 
-# Start dev server
+# Start the development server
 npm run dev
 
 # Run tests
@@ -53,36 +51,40 @@ npm run lint
 
 # Production build
 npm run build
-```
+~~~
+
+## Deployment
+
+Production deployments use GitHub Actions and GitHub Pages. Pull requests are validated on Node.js 22 and 24; changes merged to main are validated again before the production build is published.
+
+The one-time GitHub Pages setup and branch protection requirements are documented in [docs/DEVOPS.md](docs/DEVOPS.md).
 
 ## Architecture
 
-```
-src/
-  engine/
-    types.ts        Core type definitions (Rule, Diagnosis, AnalysisResult)
-    rules.ts        Knowledge base — 18 declarative error rules
-    analyzer.ts     Reasoning engine (detect, score, rank, explain)
-    examples.ts     Pre-built error examples
-  hooks/
-    useHistory.ts   localStorage-backed history with useSyncExternalStore
-  components/
-    Header.tsx
-    WorkflowStepper.tsx
-    ErrorInput.tsx
-    ReasoningChain.tsx
-    AnalysisResult.tsx
-    HistoryPanel.tsx
-    StatsDashboard.tsx
-  App.tsx           Top-level layout and state orchestration
-  main.tsx          Entry point
-  index.css         Tailwind theme and animations
-```
+    src/
+      engine/
+        types.ts        Core type definitions (Rule, Diagnosis, AnalysisResult)
+        rules.ts        Knowledge base — 18 declarative error rules
+        analyzer.ts     Reasoning engine (detect, score, rank, explain)
+        examples.ts     Pre-built error examples
+      hooks/
+        useHistory.ts   localStorage-backed history with useSyncExternalStore
+      components/
+        Header.tsx
+        WorkflowStepper.tsx
+        ErrorInput.tsx
+        ReasoningChain.tsx
+        AnalysisResult.tsx
+        HistoryPanel.tsx
+        StatsDashboard.tsx
+      App.tsx           Top-level layout and state orchestration
+      main.tsx          Entry point
+      index.css         Tailwind theme and animations
 
 ## How the Reasoning Engine Works
 
 1. **Language Detection** — heuristic signals (stack trace patterns, file extensions) are scored to identify the source language.
-2. **Rule Scoring** — each rule's `patterns` (strong: 30 pts each) and `keywords` (supporting: 5 pts each) are matched against the input. A keyword-only match requires at least two distinct keywords, and keyword contribution is capped at three matches.
+2. **Rule Scoring** — each rule's patterns (strong: 30 pts each) and keywords (supporting: 5 pts each) are matched against the input. A keyword-only match requires at least two distinct keywords, and keyword contribution is capped at three matches.
 3. **Language Affinity** — rules whose language matches the detected input get a +15 boost, breaking cross-category ties toward the right language.
 4. **Heuristic Score** — raw evidence scores are mapped to a bounded 0-98 display score. This is a ranking aid, not a statistically calibrated probability.
 5. **Reasoning Chain** — a step-by-step explanation is generated showing what the engine observed and concluded.
@@ -90,22 +92,20 @@ src/
 
 ## Extending the Rule Base
 
-Add a new rule to `src/engine/rules.ts`:
+Add a new rule to src/engine/rules.ts:
 
-```ts
-{
-  id: 'my-new-rule',
-  category: 'My Error Category',
-  language: 'javascript',
-  severity: 'medium',
-  patterns: [/MySpecificError:/i],
-  keywords: ['specific', 'context'],
-  summary: 'One-line summary.',
-  explanation: 'Why this happens.',
-  rootCauses: ['Cause 1', 'Cause 2'],
-  fixes: [{ title: 'Fix', detail: 'How to fix.', code: '// example' }],
-}
-```
+    {
+      id: 'my-new-rule',
+      category: 'My Error Category',
+      language: 'javascript',
+      severity: 'medium',
+      patterns: [/MySpecificError:/i],
+      keywords: ['specific', 'context'],
+      summary: 'One-line summary.',
+      explanation: 'Why this happens.',
+      rootCauses: ['Cause 1', 'Cause 2'],
+      fixes: [{ title: 'Fix', detail: 'How to fix.', code: '// example' }],
+    }
 
 The engine picks it up automatically — no registration needed.
 
