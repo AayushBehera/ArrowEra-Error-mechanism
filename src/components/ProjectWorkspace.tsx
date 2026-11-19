@@ -41,7 +41,7 @@ export function ProjectWorkspace({onProjectContext}:{onProjectContext:(context:s
   const [jobsLoading,setJobsLoading]=useState(false)
   const [workflowDispatching,setWorkflowDispatching]=useState(false)
   const [workflowNotice,setWorkflowNotice]=useState<string|null>(null)
-  async function runContainerWorkflow(){setWorkflowDispatching(true);setWorkflowNotice(null);try{const result=await dispatchWorkflow(repo?.name||'',' .github/workflows/container-security.yml'.trim(),repo?.defaultBranch||'main');setWorkflowNotice(result.message)}catch(e){setWorkflowNotice(e instanceof Error?e.message:'Workflow dispatch failed.')}finally{setWorkflowDispatching(false)}}
+  async function runContainerWorkflow(){setWorkflowDispatching(true);setWorkflowNotice(null);try{const result=await dispatchWorkflow(repo?.name||'','container-security.yml',repo?.defaultBranch||'main');setWorkflowNotice(result.message)}catch(e){setWorkflowNotice(e instanceof Error?e.message:'Workflow dispatch failed.')}finally{setWorkflowDispatching(false)}}
   async function toggleJobs(runId:number){if(selectedRun===runId){setSelectedRun(null);return}setSelectedRun(runId);setJobsLoading(true);try{setJobData(await fetchWorkflowJobs(repo?.name||'',runId))}catch(e){setJobData(null);setError(e instanceof Error?e.message:'Could not load workflow jobs.')}finally{setJobsLoading(false)}}
 
   function publishContext(data:ProjectSnapshot) {
