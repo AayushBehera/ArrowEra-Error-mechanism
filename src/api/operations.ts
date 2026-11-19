@@ -83,3 +83,31 @@ export async function sendAiMessage(messages: ChatMessage[]): Promise<{ answer: 
     body: JSON.stringify({ messages }),
   }))
 }
+
+export interface RepositoryAuditResult {
+  repository: {
+    name: string
+    url: string
+    defaultBranch: string
+    primaryLanguage: string
+    languages: Record<string, number>
+    stars: number
+    forks: number
+    fileCount: number
+    inspectedFileCount: number
+    workflowCount: number
+    lastPush: string
+    license: string
+    treeTruncated: boolean
+  }
+  report: string
+  model: string
+}
+
+export async function analyzeRepository(url: string): Promise<RepositoryAuditResult> {
+  return readJson<RepositoryAuditResult>(await fetch('/api/repository/analyze', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ url }),
+  }))
+}

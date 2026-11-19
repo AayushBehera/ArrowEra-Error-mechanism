@@ -83,7 +83,7 @@ export function AiAssistant() {
             <span className="text-[11px] text-slate-400">{status?.model || 'OpenAI-compatible model'}</span>
             <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider">
               <span className={'h-1.5 w-1.5 rounded-full ' + (status?.configured ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-amber-400')} />
-              <span className={status?.configured ? 'text-emerald-300' : 'text-amber-300'}>{status?.configured ? 'Connected' : 'API key pending'}</span>
+              <span className={status?.configured ? 'text-emerald-300' : 'text-amber-300'}>{status?.configured ? 'Configured' : 'API key pending'}</span>
             </span>
           </div>
 
@@ -139,7 +139,7 @@ export function AiAssistant() {
         </span>
         <span className="text-left">
           <span className="block text-xs font-semibold tracking-wide">AI Copilot</span>
-          <span className="block text-[9px] text-violet-200/60">{status?.configured ? 'Ready to assist' : 'Configure API key'}</span>
+          <span className="block text-[9px] text-violet-200/60">{status?.configured ? 'Configured · inference not yet tested' : 'Configure API key'}</span>
         </span>
       </button>
     </>
