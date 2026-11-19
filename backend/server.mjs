@@ -3,6 +3,7 @@ import { readFile, stat } from 'node:fs/promises'
 import { extname, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { analyze } from '../src/engine/analyzer.ts'
+import { beginTrace, handleIntegrationRequest } from './integrations.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const DIST = resolve(ROOT, 'dist')
@@ -418,11 +419,14 @@ async function serveStatic(pathname, response) {
 
 export function createAppServer() {
   return createHttpServer(async (request, response) => {
+    beginTrace(request, response)
     applySecurityHeaders(response)
     requestCount += 1
 
     const url = new URL(request.url || '/', 'http://localhost')
     const { pathname } = url
+
+    if (await handleIntegrationRequest(request, response, url)) return
 
     if (pathname === '/api/health' && request.method === 'GET') {
       sendJson(response, 200, {
@@ -776,28 +780,26 @@ export function createAppServer() {
           })
           committedFiles.push({ path: change.path, summary: String(change.summary || 'Updated by ArrowEra') })
         }
-        const pull = await githubWriteApi(repoRoot + '/pulls', 'POST', {
-          title: '[ArrowEra] ' + String(proposal.title || 'Automated remediation').slice(0, 180),
-          head: branchName,
-          base: repoMetadata.default_branch,
-          body: String(proposal.body || 'Automated remediation prepared by ArrowEra Copilot. Review and run the project test suite before merging.') + '\n\n---\nGenerated from repository evidence by ArrowEra. This pull request has not been merged.',
+        sendJson(response, 200, {
+          repository: fullName,
+          branch: branchName,
+          validationStatus: 'started',
+          validationWorkflowUrl: 'https://github.com/' + fullName + '/actions/workflows/ai-fix-validation.yml',
+          files: committedFiles,
+          model: payload?.model || ai.model,
+          message: 'Patch pushed to a temporary branch. GitHub Actions must pass validation before its workflow opens a pull request.',
         })
-        sendJson(response, 200, { repository: fullName, branch: branchName, pullRequestUrl: pull.html_url, pullRequestNumber: pull.number, files: committedFiles, model: payload?.model || ai.model })
+        return
       } catch (error) {
         const message = error?.status === 404
           ? 'Repository not found, or the GitHub token cannot access it.'
           : error instanceof Error ? error.message : 'Repository fix could not be prepared.'
         sendJson(response, 502, { error: message })
+        return
       }
-      return
     }
 
     if (pathname === '/api/ai/chat' && request.method === 'POST') {
-      if (isRateLimited(request, 'ai-chat', AI_RATE_LIMIT_MAX)) {
-        sendJson(response, 429, { error: 'AI assistant rate limit reached. Please retry in a minute.' })
-        return
-      }
-
       const ai = getAiConfig()
       if (!ai.apiKey) {
         sendJson(response, 503, { error: 'AI assistant is not configured. Add AI_API_KEY to the server environment.' })

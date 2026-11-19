@@ -42,8 +42,8 @@ export function AiAssistant({ projectContext }: { projectContext: string }) {
     setFixNotice(null)
     try {
       const result = await createRepositoryFix(match[1], issue, projectContext)
-      setFixNotice('Pull request #' + result.pullRequestNumber + ' created with ' + result.files.length + ' file change(s). Review it before merging: ' + result.pullRequestUrl)
-      setMessages((current) => [...current, { role: 'assistant', content: 'I prepared a fix branch and opened pull request #' + result.pullRequestNumber + '. No changes were merged into the default branch. Review the pull request and run your checks before merging.\n' + result.pullRequestUrl }])
+      setFixNotice('Fix branch ' + result.branch + ' created with ' + result.files.length + ' file change(s). GitHub Actions validation must pass before a pull request is opened. Track validation: ' + (result.validationWorkflowUrl || 'GitHub Actions'))
+      setMessages((current) => [...current, { role: 'assistant', content: 'I prepared a temporary fix branch. GitHub Actions must pass the automated validation workflow before it opens a pull request. No changes were merged into the default branch.\\n' + (result.validationWorkflowUrl || 'GitHub Actions') }])
       setDraft('')
     } catch (error) {
       setFixNotice(error instanceof Error ? error.message : 'Could not prepare repository fix.')
@@ -144,7 +144,7 @@ export function AiAssistant({ projectContext }: { projectContext: string }) {
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="m4 12 16-8-5 16-3-7-8-1Z" strokeLinejoin="round" /><path d="m12 13 8-9" /></svg>
             </button>
             </div>
-            {projectContext && <button type="button" onClick={() => void prepareFix()} disabled={!status?.configured || !status.githubWriteConfigured || !draft.trim() || fixing || sending} className="w-full rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-[10px] font-semibold text-violet-200 hover:bg-violet-500/15 disabled:cursor-not-allowed disabled:opacity-40">{fixing ? 'Preparing fix branch & pull request…' : status?.githubWriteConfigured ? 'Generate fix & open GitHub pull request' : 'GitHub write token required for code fixes'}</button>}
+            {projectContext && <button type="button" onClick={() => void prepareFix()} disabled={!status?.configured || !status.githubWriteConfigured || !draft.trim() || fixing || sending} className="w-full rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-[10px] font-semibold text-violet-200 hover:bg-violet-500/15 disabled:cursor-not-allowed disabled:opacity-40">{fixing ? 'Preparing fix branch & validation…' : status?.githubWriteConfigured ? 'Generate fix, validate, then open pull request' : 'GitHub write token required for code fixes'}</button>}
           </form>
         </section>
       )}

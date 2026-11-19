@@ -82,3 +82,35 @@ test('unknown API routes return JSON 404', async () => {
     assert.equal(typeof (await response.json()).error, 'string')
   })
 })
+
+test('GET /api/observability/traces returns bounded request traces', async () => {
+  await withServer(async (baseUrl) => {
+    const health = await fetch(`${baseUrl}/api/health`)
+    const traceId = health.headers.get('x-trace-id')
+    assert.ok(traceId)
+    const response = await fetch(`${baseUrl}/api/observability/traces?limit=10`)
+    const body = await response.json()
+    assert.equal(response.status, 200)
+    assert.ok(Array.isArray(body.traces))
+    assert.ok(body.traces.some((trace) => trace.traceId === traceId))
+  })
+})
+
+test('GET /api/integrations/status never exposes provider credentials', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/integrations/status`)
+    const body = await response.json()
+    assert.equal(response.status, 200)
+    assert.equal(typeof body.render.configured, 'boolean')
+    assert.equal(typeof body.vercel.configured, 'boolean')
+    assert.equal(JSON.stringify(body).includes('API_KEY'), false)
+  })
+})
+
+test('workflow jobs endpoint validates repository coordinates', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/project/workflows/123/jobs?repository=invalid`)
+    assert.equal(response.status, 400)
+    assert.match((await response.json()).error, /owner\/name/)
+  })
+})

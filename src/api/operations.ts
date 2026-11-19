@@ -168,8 +168,11 @@ export async function inspectProject(config: ProjectConfig): Promise<ProjectSnap
 export interface RepositoryFixResult {
   repository: string
   branch: string
-  pullRequestUrl: string
-  pullRequestNumber: number
+  pullRequestUrl?: string | null
+  pullRequestNumber?: number | null
+  validationStatus?: string
+  validationWorkflowUrl?: string
+  message?: string
   files: { path: string; summary: string }[]
   model: string
 }
@@ -179,5 +182,34 @@ export async function createRepositoryFix(repositoryUrl: string, issue: string, 
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ repositoryUrl, issue, projectContext }),
+  }))
+}
+
+export interface WorkflowJob {
+  id: number; name: string; status: string; conclusion: string | null
+  startedAt: string | null; completedAt: string | null; url: string
+  steps: { name: string; status: string; conclusion: string | null; number: number }[]
+}
+export async function fetchWorkflowJobs(repository: string, runId: number): Promise<{ totalCount: number; jobs: WorkflowJob[] }> {
+  return readJson(await fetch('/api/project/workflows/' + runId + '/jobs?repository=' + encodeURIComponent(repository), { cache: 'no-store' }))
+}
+export async function fetchIntegrations(): Promise<Record<string, { configured: boolean; [key: string]: unknown }>> {
+  return readJson(await fetch('/api/integrations/status', { cache: 'no-store' }))
+}
+export async function fetchDeploymentStatus(provider: 'render' | 'vercel'): Promise<Record<string, unknown>> {
+  return readJson(await fetch('/api/deployments/status?provider=' + provider, { cache: 'no-store' }))
+}
+export async function fetchObservabilityLogs(provider: 'render' | 'vercel'): Promise<{ provider: string; configured: boolean; logs: unknown[]; message?: string; error?: string }> {
+  return readJson(await fetch('/api/observability/logs?provider=' + provider, { cache: 'no-store' }))
+}
+export async function fetchRequestTraces(): Promise<{ traces: { traceId: string; method: string; path: string; status: number; durationMs: number; timestamp: string }[]; retention: string }> {
+  return readJson(await fetch('/api/observability/traces?limit=60', { cache: 'no-store' }))
+}
+
+export async function dispatchWorkflow(repository: string, workflow: string, ref = 'main'): Promise<{ accepted: boolean; message: string }> {
+  return readJson(await fetch('/api/project/workflows/dispatch', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ repository, workflow, ref }),
   }))
 }
