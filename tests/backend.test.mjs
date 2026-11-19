@@ -1,0 +1,84 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { createAppServer } from '../backend/server.mjs'
+
+async function withServer(run) {
+  const server = createAppServer()
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const address = server.address()
+  try {
+    await run(`http://127.0.0.1:${address.port}`)
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
+  }
+}
+
+test('GET /api/health returns service status', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/health`)
+    const body = await response.json()
+    assert.equal(response.status, 200)
+    assert.equal(body.status, 'ok')
+    assert.equal(body.service, 'arrowera-error-mechanism')
+    assert.ok(body.timestamp)
+  })
+})
+
+test('POST /api/analyze returns the existing deterministic engine result', async () => {
+  await withServer(async (baseUrl) => {
+    const input = 'TypeError: Cannot read properties of undefined (reading map)\n at App (src/App.tsx:12:3)'
+    const response = await fetch(`${baseUrl}/api/analyze`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ input }),
+    })
+    const body = await response.json()
+    assert.equal(response.status, 200)
+    assert.equal(body.input, input)
+    assert.equal(body.detectedLanguage, 'typescript')
+    assert.equal(body.primary?.rule.id, 'js-null-ref')
+    assert.ok(Array.isArray(body.reasoning))
+  })
+})
+
+test('POST /api/analyze rejects empty input', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/analyze`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ input: '   ' }),
+    })
+    assert.equal(response.status, 400)
+    assert.match((await response.json()).error, /non-empty/)
+  })
+})
+
+test('POST /api/analyze rejects non-string input', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/analyze`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ input: 42 }),
+    })
+    assert.equal(response.status, 400)
+  })
+})
+
+test('POST /api/analyze rejects unsupported content types', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/analyze`, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: 'hello',
+    })
+    assert.equal(response.status, 415)
+  })
+})
+
+test('unknown API routes return JSON 404', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/unknown`)
+    assert.equal(response.status, 404)
+    assert.equal(typeof (await response.json()).error, 'string')
+  })
+})

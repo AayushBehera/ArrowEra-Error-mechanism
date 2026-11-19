@@ -2,20 +2,21 @@ import { useState } from 'react'
 import { examples } from '../engine/examples.ts'
 
 interface Props {
-  onAnalyze: (input: string) => void
+  onAnalyze: (input: string) => Promise<void>
+  isAnalyzing: boolean
 }
 
-export function ErrorInput({ onAnalyze }: Props) {
+export function ErrorInput({ onAnalyze, isAnalyzing }: Props) {
   const [value, setValue] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (value.trim()) onAnalyze(value)
+    if (value.trim() && !isAnalyzing) void onAnalyze(value)
   }
 
   function handleExample(text: string) {
     setValue(text)
-    onAnalyze(text)
+    if (!isAnalyzing) void onAnalyze(text)
   }
 
   return (
@@ -30,26 +31,26 @@ export function ErrorInput({ onAnalyze }: Props) {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           spellCheck={false}
+          disabled={isAnalyzing}
         />
         <div className="flex items-center gap-3">
           <button
             type="submit"
-            disabled={!value.trim()}
+            disabled={!value.trim() || isAnalyzing}
             className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
           >
-            Analyze Error
+            {isAnalyzing ? 'Analyzing…' : 'Analyze Error'}
           </button>
           <button
             type="button"
             onClick={() => setValue('')}
-            className="px-4 py-2.5 rounded-lg border border-gray-700 text-gray-400 text-sm hover:text-gray-200 hover:border-gray-500 transition-colors"
+            disabled={isAnalyzing}
+            className="px-4 py-2.5 rounded-lg border border-gray-700 text-gray-400 text-sm hover:text-gray-200 hover:border-gray-500 transition-colors disabled:opacity-40"
           >
             Clear
           </button>
         </div>
       </form>
-
-      {/* Example pills */}
       <div className="space-y-2">
         <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">
           Try an example
@@ -59,8 +60,9 @@ export function ErrorInput({ onAnalyze }: Props) {
             <button
               key={ex.label}
               type="button"
+              disabled={isAnalyzing}
               onClick={() => handleExample(ex.text)}
-              className="px-3 py-1.5 rounded-full text-xs border border-gray-700/60 bg-gray-800/40 text-gray-400 hover:text-indigo-300 hover:border-indigo-500/40 hover:bg-indigo-950/30 transition-colors"
+              className="px-3 py-1.5 rounded-full text-xs border border-gray-700/60 bg-gray-800/40 text-gray-400 hover:text-indigo-300 hover:border-indigo-500/40 hover:bg-indigo-950/30 transition-colors disabled:opacity-40"
             >
               {ex.label}
             </button>

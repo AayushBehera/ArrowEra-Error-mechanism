@@ -1,114 +1,82 @@
 # ArrowEra Error Mechanism
 
-An intelligent error triage and reasoning workbench. Paste any error message or stack trace and get a transparent, step-by-step diagnosis with confidence scoring, root cause analysis, and actionable fix suggestions.
-
-## Demo
-
-Paste an error, click **Analyze Error**, and see the engine work:
-
-```
-TypeError: Cannot read properties of undefined (reading 'map')
-    at UserList (src/components/UserList.tsx:14:22)
-```
-
-The engine detects the language, matches it against 18 built-in rules, and produces a full reasoning chain with confidence score and suggested fixes.
-
-## Features
-
-- **Deterministic analysis** — no API calls, no network, runs entirely in the browser
-- **Transparent reasoning** — every step of the engine's logic is shown with evidence
-- **Multi-language support** — JavaScript, TypeScript, Python, Java, and network errors
-- **Heuristic evidence scoring** — pattern matches and supporting keywords produce a bounded 0-98 score; this is not a calibrated probability
-- **Severity classification** — Critical / High / Medium / Low with visual badges
-- **Fix suggestions** — concrete code snippets for each diagnosis
-- **History** — localStorage-backed history with search and delete
-- **Stats dashboard** — total analyzed, severity breakdown, top language, average confidence
-- **8 built-in examples** — try instantly with one click
-- **Workflow stepper** — visual progress: Capture > Analyze > Diagnose > Resolve
-
-## Built With
-
-- [React 19](https://react.dev) — UI framework
-- [TypeScript 6](https://www.typescriptlang.org) — type-safe JavaScript
-- [Vite 8](https://vite.dev) — build tool and dev server
-- [Tailwind CSS 4](https://tailwindcss.com) — utility-first styling
-
-## Getting Started
-
-```bash
-# Install dependencies
-npm install
-
-# Start dev server
-npm run dev
-
-# Run tests
-npm test
-
-# Type-check
-npm run typecheck
-
-# Lint
-npm run lint
-
-# Production build
-npm run build
-```
+An error triage and reasoning workbench. Paste an error message or stack trace to receive a transparent, deterministic diagnosis with a reasoning chain and actionable fixes.
 
 ## Architecture
 
-```
-src/
-  engine/
-    types.ts        Core type definitions (Rule, Diagnosis, AnalysisResult)
-    rules.ts        Knowledge base — 18 declarative error rules
-    analyzer.ts     Reasoning engine (detect, score, rank, explain)
-    examples.ts     Pre-built error examples
-  hooks/
-    useHistory.ts   localStorage-backed history with useSyncExternalStore
-  components/
-    Header.tsx
-    WorkflowStepper.tsx
-    ErrorInput.tsx
-    ReasoningChain.tsx
-    AnalysisResult.tsx
-    HistoryPanel.tsx
-    StatsDashboard.tsx
-  App.tsx           Top-level layout and state orchestration
-  main.tsx          Entry point
-  index.css         Tailwind theme and animations
+- **Frontend:** React, TypeScript, Vite and Tailwind CSS.
+- **Backend:** Node.js HTTP server using built-in modules.
+- **Diagnostic engine:** Existing deterministic TypeScript engine, shared by the browser build and backend runtime.
+- **Persistence:** Browser history remains in localStorage. Server-side database persistence is intentionally deferred.
+- **Deployment:** A single Railway service builds the frontend and serves it alongside the API.
+
+The backend uses Node.js native TypeScript type stripping to execute the existing engine without introducing a second implementation or adding runtime dependencies. Use Node.js 24.12 or later.
+
+## Getting started
+
+```bash
+npm ci
+npm run dev:backend
 ```
 
-## How the Reasoning Engine Works
+In a second terminal:
 
-1. **Language Detection** — heuristic signals (stack trace patterns, file extensions) are scored to identify the source language.
-2. **Rule Scoring** — each rule's `patterns` (strong: 30 pts each) and `keywords` (supporting: 5 pts each) are matched against the input. A keyword-only match requires at least two distinct keywords, and keyword contribution is capped at three matches.
-3. **Language Affinity** — rules whose language matches the detected input get a +15 boost, breaking cross-category ties toward the right language.
-4. **Heuristic Score** — raw evidence scores are mapped to a bounded 0-98 display score. This is a ranking aid, not a statistically calibrated probability.
-5. **Reasoning Chain** — a step-by-step explanation is generated showing what the engine observed and concluded.
-6. **Ranking** — rules are ranked by total score. The top match becomes the primary diagnosis, the next 3 are alternatives.
+```bash
+npm run dev
+```
 
-## Extending the Rule Base
+The Vite development server proxies `/api` requests to the backend on port 3001.
 
-Add a new rule to `src/engine/rules.ts`:
+## Scripts
 
-```ts
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the Vite frontend |
+| `npm run dev:backend` | Start the local API server |
+| `npm run start:backend` | Start the production server |
+| `npm run build` | Type-check and build the frontend |
+| `npm run typecheck` | Run TypeScript checks |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run analyzer and backend integration tests |
+
+## API
+
+### `GET /api/health`
+
+Returns service health and a timestamp.
+
+### `POST /api/analyze`
+
+Request:
+
+```json
 {
-  id: 'my-new-rule',
-  category: 'My Error Category',
-  language: 'javascript',
-  severity: 'medium',
-  patterns: [/MySpecificError:/i],
-  keywords: ['specific', 'context'],
-  summary: 'One-line summary.',
-  explanation: 'Why this happens.',
-  rootCauses: ['Cause 1', 'Cause 2'],
-  fixes: [{ title: 'Fix', detail: 'How to fix.', code: '// example' }],
+  "input": "TypeError: Cannot read properties of undefined"
 }
 ```
 
-The engine picks it up automatically — no registration needed.
+Returns the same `AnalysisResult` structure used by the existing diagnostic UI.
 
-## License
+Input is limited to 50,000 characters and request bodies to 64 KB. Analysis requests are rate-limited per client address. The API returns JSON errors for invalid requests.
 
-MIT
+## Railway deployment
+
+1. Create a Railway project and connect this GitHub repository.
+2. Configure the service to deploy from the intended branch (use `main` for production).
+3. Railway detects `railway.json`, runs `npm ci && npm run build`, then starts `npm run start:backend`.
+4. Configure a public domain in Railway.
+5. Confirm the deployment health check succeeds at `/api/health`.
+
+The service binds to `0.0.0.0` and uses Railway's `PORT` environment variable. No database or secrets are required for this initial release. Railway deployment is configured through the Railway GitHub integration; GitHub Actions validates pull requests before merge.
+
+## CI and security automation
+
+GitHub Actions validates type-checking, lint, tests and the production build on pushes and pull requests. The build output is uploaded as a short-lived artifact. CodeQL scans JavaScript/TypeScript, and Dependabot checks npm and GitHub Actions dependencies weekly. GitHub Dependency Review can be enabled after turning on the repository Dependency Graph in Settings → Security.
+
+## Data and privacy
+
+Analysis requests are processed in memory and are not persisted by the backend. The existing localStorage history remains browser-local. Avoid pasting credentials, access tokens, private keys or other secrets into diagnostic input.
+
+## Existing diagnostic rules
+
+The deterministic engine and all 18 existing rules are retained. The displayed heuristic score is an evidence-ranking aid, not a calibrated probability.
