@@ -22,13 +22,15 @@ export function ProjectWorkspace({ onProjectContext }: { onProjectContext: (cont
   const [draftRepo, setDraftRepo] = useState(config?.repositoryUrl ?? '')
   const [draftDeploy, setDraftDeploy] = useState(config?.deploymentUrl ?? '')
   const [snapshot, setSnapshot] = useState<ProjectSnapshot | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(() => Boolean(readSavedConfig()))
   const [error, setError] = useState<string | null>(null)
   const [lastRun, setLastRun] = useState<string | null>(null)
 
-  async function runInspection(nextConfig: ProjectConfig) {
-    setLoading(true)
-    setError(null)
+  async function runInspection(nextConfig: ProjectConfig, initial = false) {
+    if (!initial) {
+      setLoading(true)
+      setError(null)
+    }
     try {
       const data = await inspectProject(nextConfig)
       setSnapshot(data)
@@ -58,7 +60,7 @@ export function ProjectWorkspace({ onProjectContext }: { onProjectContext: (cont
   }
 
   useEffect(() => {
-    if (config) void runInspection(config)
+    if (config) void runInspection(config, true)
   // Initial project restoration only. Refresh is user-triggered below.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
