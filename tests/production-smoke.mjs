@@ -6,7 +6,7 @@ test('production server serves the built frontend, assets and analysis API', asy
   const server = createAppServer()
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const address = server.address()
-  const baseUrl = \`http://127.0.0.1:\${address.port}\`
+  const baseUrl = `http://127.0.0.1:${address.port}`
 
   try {
     const pageResponse = await fetch(baseUrl)
@@ -28,19 +28,19 @@ test('production server serves the built frontend, assets and analysis API', asy
       assert.match(cssResponse.headers.get('content-type') || '', /text\/css/)
     }
 
-    const missingAsset = await fetch(\`\${baseUrl}/assets/missing-file.js\`)
+    const missingAsset = await fetch(`${baseUrl}/assets/missing-file.js`)
     assert.equal(missingAsset.status, 404)
 
     const headResponse = await fetch(baseUrl, { method: 'HEAD' })
     assert.equal(headResponse.status, 200)
     assert.equal(await headResponse.text(), '')
 
-    const healthResponse = await fetch(\`\${baseUrl}/api/health\`)
+    const healthResponse = await fetch(`${baseUrl}/api/health`)
     assert.equal(healthResponse.status, 200)
     assert.equal((await healthResponse.json()).status, 'ok')
 
     const input = 'TypeError: Cannot read properties of undefined (reading map)'
-    const analysisResponse = await fetch(\`\${baseUrl}/api/analyze\`, {
+    const analysisResponse = await fetch(`${baseUrl}/api/analyze`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ input }),

@@ -228,7 +228,7 @@ if (isDirectRun) {
   const server = createAppServer()
 
   server.listen(port, host, () => {
-    console.log(\`ArrowEra server listening on http://\${host}:\${port}\`)
+    console.log(`ArrowEra server listening on http://${host}:${port}`)
   })
 
   const shutdown = () => {

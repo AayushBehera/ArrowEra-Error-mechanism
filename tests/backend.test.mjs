@@ -7,14 +7,14 @@ async function withServer(run) {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const address = server.address()
   try {
-    await run(\`http://127.0.0.1:\${address.port}\`)
+    await run(`http://127.0.0.1:${address.port}`)
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
   }
 }
 
 async function postAnalysis(baseUrl, body, headers = { 'content-type': 'application/json' }) {
-  return fetch(\`\${baseUrl}/api/analyze\`, {
+  return fetch(`${baseUrl}/api/analyze`, {
     method: 'POST',
     headers,
     body,
@@ -23,7 +23,7 @@ async function postAnalysis(baseUrl, body, headers = { 'content-type': 'applicat
 
 test('GET /api/health returns service status and security headers', async () => {
   await withServer(async (baseUrl) => {
-    const response = await fetch(\`\${baseUrl}/api/health\`)
+    const response = await fetch(`${baseUrl}/api/health`)
     const body = await response.json()
     assert.equal(response.status, 200)
     assert.equal(body.status, 'ok')
@@ -108,7 +108,7 @@ test('POST /api/analyze rate limits a client after 30 requests per minute', asyn
 
 test('unknown API routes return JSON 404', async () => {
   await withServer(async (baseUrl) => {
-    const response = await fetch(\`\${baseUrl}/api/unknown\`)
+    const response = await fetch(`${baseUrl}/api/unknown`)
     assert.equal(response.status, 404)
     assert.equal(typeof (await response.json()).error, 'string')
   })
