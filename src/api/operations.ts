@@ -111,3 +111,45 @@ export async function analyzeRepository(url: string): Promise<RepositoryAuditRes
     body: JSON.stringify({ url }),
   }))
 }
+
+export interface ProjectConfig {
+  repositoryUrl: string
+  deploymentUrl: string
+}
+
+export interface ProjectSnapshot {
+  repository: {
+    name: string
+    url: string
+    description: string
+    defaultBranch: string
+    primaryLanguage: string
+    languages: Record<string, number>
+    stars: number
+    forks: number
+    openIssues: number
+    license: string
+    archived: boolean
+    lastPush: string
+    fileCount: number
+    treeTruncated: boolean
+    topLevelDirectories: string[]
+    workflowFiles: string[]
+    inspectedFiles: { path: string; content: string }[]
+  }
+  workflows: { id: number; name: string; branch: string; status: string; conclusion: string | null; createdAt: string; url: string }[]
+  commits: { sha: string; message: string; author: string; date: string | null; url: string }[]
+  pullRequests: { number: number; title: string; branch: string; updatedAt: string; url: string }[]
+  branches: string[]
+  deployment: { url: string; status: number | null; healthy: boolean; latencyMs: number; checkedAt: string; redirected?: boolean; error?: string } | null
+  checks: Record<string, string>
+  inspectedAt: string
+}
+
+export async function inspectProject(config: ProjectConfig): Promise<ProjectSnapshot> {
+  return readJson<ProjectSnapshot>(await fetch('/api/project/inspect', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(config),
+  }))
+}
