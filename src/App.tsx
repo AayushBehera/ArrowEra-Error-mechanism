@@ -43,7 +43,6 @@ export default function App() {
 
   useEffect(() => {
     let active = true
-    let timer: number | undefined
 
     async function refreshTelemetry() {
       try {
@@ -61,10 +60,10 @@ export default function App() {
     }
 
     void refreshTelemetry()
-    timer = window.setInterval(() => { void refreshTelemetry() }, 15_000)
+    const timer = window.setInterval(() => { void refreshTelemetry() }, 15_000)
     return () => {
       active = false
-      if (timer !== undefined) window.clearInterval(timer)
+      window.clearInterval(timer)
     }
   }, [])
 
