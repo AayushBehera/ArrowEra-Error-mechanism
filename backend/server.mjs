@@ -790,7 +790,14 @@ export function createAppServer() {
           message: 'Patch pushed to a temporary branch. GitHub Actions must pass validation before its workflow opens a pull request.',
         })
         return
+      } catch (error) {
+        const message = error?.status === 404
+          ? 'Repository not found, or the GitHub token cannot access it.'
+          : error instanceof Error ? error.message : 'Repository fix could not be prepared.'
+        sendJson(response, 502, { error: message })
+        return
       }
+    }
 
       const ai = getAiConfig()
       if (!ai.apiKey) {
