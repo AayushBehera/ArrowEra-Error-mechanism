@@ -42,6 +42,7 @@ export interface AiStatus {
   configured: boolean
   model: string
   provider: string
+  githubWriteConfigured?: boolean
 }
 
 export interface ChatMessage {
