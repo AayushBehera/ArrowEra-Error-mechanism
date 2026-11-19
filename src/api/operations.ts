@@ -76,11 +76,11 @@ export async function fetchAiStatus(): Promise<AiStatus> {
   }))
 }
 
-export async function sendAiMessage(messages: ChatMessage[]): Promise<{ answer: string; model: string }> {
+export async function sendAiMessage(messages: ChatMessage[], projectContext = ''): Promise<{ answer: string; model: string }> {
   return readJson<{ answer: string; model: string }>(await fetch('/api/ai/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages, projectContext }),
   }))
 }
 
