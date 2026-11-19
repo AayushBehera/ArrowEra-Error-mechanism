@@ -62,15 +62,15 @@ for (const example of examples) {
 }
 
 test('TypeScript stack frames are detected as TypeScript', () => {
-  const tsx = analyze('TypeError: Cannot read properties of undefined\\n    at UserList (src/components/UserList.tsx:14:22)')
-  const ts = analyze('TS2322: Type is not assignable\\n    at build (src/index.ts:8:3)')
+  const tsx = analyze('TypeError: Cannot read properties of undefined\n    at UserList (src/components/UserList.tsx:14:22)')
+  const ts = analyze('TS2322: Type is not assignable\n    at build (src/index.ts:8:3)')
   assert.equal(tsx.detectedLanguage, 'typescript')
   assert.equal(ts.detectedLanguage, 'typescript')
 })
 
 test('JavaScript stack frames remain JavaScript', () => {
-  const js = analyze('TypeError: value is not a function\\n    at run (src/index.js:14:2)')
-  const jsx = analyze('TypeError: value is not a function\\n    at App (src/App.jsx:14:2)')
+  const js = analyze('TypeError: value is not a function\n    at run (src/index.js:14:2)')
+  const jsx = analyze('TypeError: value is not a function\n    at App (src/App.jsx:14:2)')
   assert.equal(js.detectedLanguage, 'javascript')
   assert.equal(jsx.detectedLanguage, 'javascript')
 })
@@ -82,7 +82,7 @@ test('a single generic keyword cannot produce a diagnosis', () => {
 })
 
 test('ranking is deterministic for identical input', () => {
-  const input = 'TypeError: Cannot read properties of undefined\\n    at App (src/App.tsx:14:2)'
+  const input = 'TypeError: Cannot read properties of undefined\n    at App (src/App.tsx:14:2)'
   const first = analyze(input)
   const second = analyze(input)
   assert.equal(first.detectedLanguage, second.detectedLanguage)
