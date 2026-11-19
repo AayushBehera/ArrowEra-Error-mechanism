@@ -7,6 +7,7 @@ RUN npm run build
 FROM node:24-alpine AS runtime
 ENV NODE_ENV=production PORT=10000 HOST=0.0.0.0
 WORKDIR /app
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/backend ./backend
 COPY --from=build /app/src/engine ./src/engine
