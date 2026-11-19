@@ -477,6 +477,7 @@ export function createAppServer() {
         configured: Boolean(ai.apiKey),
         model: ai.model,
         provider: ai.provider,
+        githubWriteConfigured: Boolean(process.env.GITHUB_TOKEN),
       })
       return
     }
