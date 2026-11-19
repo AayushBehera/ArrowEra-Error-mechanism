@@ -13,9 +13,9 @@ import { StatsDashboard } from './components/StatsDashboard.tsx'
 import { OperationsWorkspace } from './components/OperationsWorkspace.tsx'
 import type { WorkspacePage } from './components/OperationsWorkspace.tsx'
 import { AiAssistant } from './components/AiAssistant.tsx'
-import { RepositoryAudit } from './components/RepositoryAudit.tsx'
+import { ProjectWorkspace } from './components/ProjectWorkspace.tsx'
 
-type Page = WorkspacePage | 'errors' | 'repository'
+type Page = WorkspacePage | 'errors'
 
 function uid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -29,11 +29,12 @@ const navigation: { id: Page; label: string; icon: string; group: string }[] = [
   { id: 'errors', label: 'Error triage', icon: '⌘', group: 'Workspace' },
   { id: 'pipelines', label: 'Pipelines', icon: '⇄', group: 'Delivery' },
   { id: 'services', label: 'Services & topology', icon: '⌬', group: 'Delivery' },
-  { id: 'repository', label: 'Repository audit', icon: '⌕', group: 'Delivery' },
+
 ]
 
 export default function App() {
   const [page, setPage] = useState<Page>('overview')
+  const [projectContext, setProjectContext] = useState('')
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
@@ -230,7 +231,7 @@ export default function App() {
           ARROWERA ERROR MECHANISM · NODE RUNTIME · {new Date().getFullYear()}
         </footer>
       </div>
-      <AiAssistant />
+      <AiAssistant projectContext={projectContext} />
     </div>
   )
 }
