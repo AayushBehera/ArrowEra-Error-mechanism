@@ -799,6 +799,7 @@ export function createAppServer() {
       }
     }
 
+    if (pathname === '/api/ai/chat' && request.method === 'POST') {
       const ai = getAiConfig()
       if (!ai.apiKey) {
         sendJson(response, 503, { error: 'AI assistant is not configured. Add AI_API_KEY to the server environment.' })
