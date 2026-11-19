@@ -30,14 +30,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          image-ref: arrowera:${{ github.sha }}
-          format: table
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: CRITICAL,HIGH
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$HOME/.cache/trivy:/root/.cache/" \
+            aquasec/trivy:0.58.2 image \
+            --exit-code 1 \
+            --ignore-unfixed \
+            --vuln-type os,library \
+            --severity CRITICAL,HIGH \
+            arrowera:${{ github.sha }}
       - name: Generate image metadata
         id: meta
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
