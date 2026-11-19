@@ -125,6 +125,7 @@ export function AiAssistant({ projectContext }: { projectContext: string }) {
 
           {fixNotice && <div className="mx-3 mb-2 break-words rounded-lg border border-violet-400/20 bg-violet-500/5 px-3 py-2 text-[10px] leading-relaxed text-violet-200">{fixNotice}</div>}
           <form onSubmit={submit} className="flex flex-col gap-2 border-t border-slate-800 p-3">
+            <div className="flex items-end gap-2">
             <textarea
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
