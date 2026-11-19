@@ -135,6 +135,9 @@ export interface ProjectSnapshot {
     treeTruncated: boolean
     topLevelDirectories: string[]
     workflowFiles: string[]
+    testFiles: string[]
+    dependencyFiles: string[]
+    deploymentFiles: string[]
     inspectedFiles: { path: string; content: string }[]
   }
   workflows: { id: number; name: string; branch: string; status: string; conclusion: string | null; createdAt: string; url: string }[]
@@ -143,6 +146,13 @@ export interface ProjectSnapshot {
   branches: string[]
   deployment: { url: string; status: number | null; healthy: boolean; latencyMs: number; checkedAt: string; redirected?: boolean; error?: string } | null
   checks: Record<string, string>
+  engine: {
+    status: 'healthy' | 'review' | 'attention'
+    summary: { critical: number; warning: number; info: number }
+    checks: { name: string; status: string; detail: string }[]
+    findings: { severity: string; category: string; title: string; detail: string; evidence?: string[] }[]
+    generatedAt: string
+  }
   inspectedAt: string
 }
 
