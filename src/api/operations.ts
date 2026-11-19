@@ -153,3 +153,20 @@ export async function inspectProject(config: ProjectConfig): Promise<ProjectSnap
     body: JSON.stringify(config),
   }))
 }
+
+export interface RepositoryFixResult {
+  repository: string
+  branch: string
+  pullRequestUrl: string
+  pullRequestNumber: number
+  files: { path: string; summary: string }[]
+  model: string
+}
+
+export async function createRepositoryFix(repositoryUrl: string, issue: string, projectContext: string): Promise<RepositoryFixResult> {
+  return readJson<RepositoryFixResult>(await fetch('/api/ai/fix', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ repositoryUrl, issue, projectContext }),
+  }))
+}
