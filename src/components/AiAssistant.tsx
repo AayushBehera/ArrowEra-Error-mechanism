@@ -43,7 +43,7 @@ export function AiAssistant({ projectContext }: { projectContext: string }) {
     try {
       const result = await createRepositoryFix(match[1], issue, projectContext)
       setFixNotice('Fix branch ' + result.branch + ' created with ' + result.files.length + ' file change(s). GitHub Actions validation must pass before a pull request is opened. Track validation: ' + (result.validationWorkflowUrl || 'GitHub Actions'))
-      setMessages((current) => [...current, { role: 'assistant', content: 'I prepared a fix branch and opened pull request #' + result.pullRequestNumber + '. No changes were merged into the default branch. Review the pull request and run your checks before merging.\n' + result.pullRequestUrl }])
+      setMessages((current) => [...current, { role: 'assistant', content: 'I prepared a temporary fix branch. GitHub Actions must pass the automated validation workflow before it opens a pull request. No changes were merged into the default branch.\\n' + (result.validationWorkflowUrl || 'GitHub Actions') }])
       setDraft('')
     } catch (error) {
       setFixNotice(error instanceof Error ? error.message : 'Could not prepare repository fix.')
