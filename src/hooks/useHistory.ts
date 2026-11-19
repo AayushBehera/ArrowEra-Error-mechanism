@@ -1,5 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react'
-import type { HistoryEntry, Language, Severity } from '../engine/types.ts'
+import type { AnalysisResult, Diagnosis, HistoryEntry, Language, Severity } from '../engine/types.ts'
+import { rules } from '../engine/rules.ts'
 
 const STORAGE_KEY = 'arrowera-error-history'
 const MAX_ENTRIES = 100
@@ -16,6 +17,73 @@ const KNOWN_LANGUAGES: Language[] = [
 
 let listeners: Array<() => void> = []
 let cache: HistoryEntry[] | null = null
+
+function normalizeDiagnosis(raw: unknown): Diagnosis | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const candidate = raw as Partial<Diagnosis>
+  const ruleId =
+    typeof candidate.rule === 'object' && candidate.rule !== null
+      ? (candidate.rule as { id?: unknown }).id
+      : undefined
+  if (typeof ruleId !== 'string') return null
+  const rule = rules.find((item) => item.id === ruleId)
+  if (!rule || typeof candidate.confidence !== 'number' || !Number.isFinite(candidate.confidence)) {
+    return null
+  }
+  if (
+    !Array.isArray(candidate.matchedPatterns) ||
+    !candidate.matchedPatterns.every((item) => typeof item === 'string') ||
+    !Array.isArray(candidate.matchedKeywords) ||
+    !candidate.matchedKeywords.every((item) => typeof item === 'string')
+  ) {
+    return null
+  }
+  return {
+    rule,
+    confidence: Math.max(0, Math.min(100, candidate.confidence)),
+    matchedPatterns: candidate.matchedPatterns,
+    matchedKeywords: candidate.matchedKeywords,
+  }
+}
+
+function normalizeAnalysisResult(raw: unknown): AnalysisResult | undefined {
+  if (typeof raw !== 'object' || raw === null) return undefined
+  const candidate = raw as Partial<AnalysisResult>
+  if (
+    typeof candidate.input !== 'string' ||
+    !KNOWN_LANGUAGES.includes(candidate.detectedLanguage as Language) ||
+    typeof candidate.analyzedAt !== 'number' ||
+    !Number.isFinite(candidate.analyzedAt) ||
+    !Array.isArray(candidate.reasoning) ||
+    !candidate.reasoning.every(
+      (step) =>
+        typeof step === 'object' &&
+        step !== null &&
+        typeof step.label === 'string' &&
+        typeof step.detail === 'string' &&
+        (step.evidence === undefined || typeof step.evidence === 'string'),
+    ) ||
+    !Array.isArray(candidate.alternatives)
+  ) {
+    return undefined
+  }
+
+  const primary =
+    candidate.primary === null ? null : normalizeDiagnosis(candidate.primary)
+  if (candidate.primary !== null && !primary) return undefined
+
+  const alternatives = candidate.alternatives.map(normalizeDiagnosis)
+  if (alternatives.some((item) => item === null)) return undefined
+
+  return {
+    input: candidate.input,
+    detectedLanguage: candidate.detectedLanguage as Language,
+    reasoning: candidate.reasoning,
+    primary,
+    alternatives: alternatives as Diagnosis[],
+    analyzedAt: candidate.analyzedAt,
+  }
+}
 
 /**
  * localStorage is an untrusted boundary (hand-edited, stale versions, other
@@ -36,12 +104,13 @@ function normalizeEntry(raw: unknown): HistoryEntry | null {
     language: e.language as Language,
     confidence:
       typeof e.confidence === 'number' && Number.isFinite(e.confidence)
-        ? e.confidence
+        ? Math.max(0, Math.min(100, e.confidence))
         : 0,
     analyzedAt:
       typeof e.analyzedAt === 'number' && Number.isFinite(e.analyzedAt)
         ? e.analyzedAt
         : 0,
+    result: normalizeAnalysisResult(e.result),
   }
 }
 

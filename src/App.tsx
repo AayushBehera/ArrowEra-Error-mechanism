@@ -39,6 +39,7 @@ export default function App() {
         language: analysisResult.detectedLanguage,
         confidence: analysisResult.primary.confidence,
         analyzedAt: analysisResult.analyzedAt,
+        result: analysisResult,
       }
       add(entry)
     }
@@ -50,7 +51,15 @@ export default function App() {
   }
 
   function handleHistorySelect(entry: HistoryEntry) {
-    handleAnalyze(entry.input)
+    // Prefer the original snapshot so the diagnosis and timestamp are stable.
+    // Older entries remain readable and fall back to a fresh analysis without
+    // inserting another history record.
+    const restored = entry.result ?? analyze(entry.input)
+    setResult({
+      ...restored,
+      analyzedAt: entry.analyzedAt || restored.analyzedAt,
+    })
+    setView('result')
   }
 
   const activeStep = view === 'input' ? 0 : result?.primary ? 3 : 1

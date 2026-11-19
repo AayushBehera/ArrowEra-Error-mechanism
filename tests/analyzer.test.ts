@@ -61,10 +61,44 @@ for (const example of examples) {
   })
 }
 
-test('a JS error detected as javascript is boosted by language affinity', () => {
+test('TypeScript stack frames are detected as TypeScript', () => {
+  const tsx = analyze('TypeError: Cannot read properties of undefined\\n    at UserList (src/components/UserList.tsx:14:22)')
+  const ts = analyze('TS2322: Type is not assignable\\n    at build (src/index.ts:8:3)')
+  assert.equal(tsx.detectedLanguage, 'typescript')
+  assert.equal(ts.detectedLanguage, 'typescript')
+})
+
+test('JavaScript stack frames remain JavaScript', () => {
+  const js = analyze('TypeError: value is not a function\\n    at run (src/index.js:14:2)')
+  const jsx = analyze('TypeError: value is not a function\\n    at App (src/App.jsx:14:2)')
+  assert.equal(js.detectedLanguage, 'javascript')
+  assert.equal(jsx.detectedLanguage, 'javascript')
+})
+
+test('a single generic keyword cannot produce a diagnosis', () => {
+  const result = analyze('TypeError is mentioned in this documentation, but no exception occurred.')
+  assert.equal(result.primary, null)
+  assert.deepEqual(result.alternatives, [])
+})
+
+test('ranking is deterministic for identical input', () => {
+  const input = 'TypeError: Cannot read properties of undefined\\n    at App (src/App.tsx:14:2)'
+  const first = analyze(input)
+  const second = analyze(input)
+  assert.equal(first.detectedLanguage, second.detectedLanguage)
+  assert.equal(first.primary?.rule.id, second.primary?.rule.id)
+  assert.deepEqual(first.alternatives.map((item) => item.rule.id), second.alternatives.map((item) => item.rule.id))
+  assert.deepEqual(first.reasoning, second.reasoning)
+})
+
+test('all 18 shipped diagnostic rules remain available', () => {
+  assert.equal(rules.length, 18)
+})
+
+test('a JavaScript error detected as javascript is boosted by language affinity', () => {
   const result = analyze(
     "TypeError: Cannot read properties of undefined (reading 'map')\n" +
-      '    at UserList (src/components/UserList.tsx:14:22)',
+      '    at UserList (src/components/UserList.js:14:22)',
   )
   assert.equal(result.detectedLanguage, 'javascript')
   assert.equal(result.primary?.rule.id, 'js-null-ref')

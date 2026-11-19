@@ -71,4 +71,6 @@ export interface HistoryEntry {
   language: Language
   confidence: number
   analyzedAt: number
+  /** Optional full snapshot; absent on entries saved by older versions. */
+  result?: AnalysisResult
 }
