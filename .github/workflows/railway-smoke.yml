@@ -1,0 +1,50 @@
+name: Railway Deployment Smoke Test
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: railway-production-smoke
+  cancel-in-progress: false
+jobs:
+  verify-production:
+    name: Verify Railway production deployment
+    if: >-
+      (github.event_name == 'workflow_dispatch' ||
+       github.event.workflow_run.conclusion == 'success') &&
+      vars.RAILWAY_PUBLIC_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check production API and frontend
+        shell: bash
+        env:
+          RAILWAY_PUBLIC_URL: ${{ vars.RAILWAY_PUBLIC_URL }}
+        run: |
+          set -euo pipefail
+          base_url="${RAILWAY_PUBLIC_URL%/}"
+          case "$base_url" in
+            https://*) ;;
+            *) echo "::error::RAILWAY_PUBLIC_URL must be an HTTPS base URL."; exit 1 ;;
+          esac
+
+          health_json="$(curl --fail --silent --show-error --location \
+            --retry 12 --retry-all-errors --retry-delay 10 --max-time 15 \
+            "$base_url/api/health")"
+          printf '%s' "$health_json" | jq --exit-status \
+            '.status == "ok" and .service == "arrowera-error-mechanism"'
+
+          homepage="$(curl --fail --silent --show-error --location \
+            --retry 3 --retry-delay 5 --max-time 15 "$base_url/")"
+          grep -Fq '<title>ArrowEra · Error Mechanism</title>' <<< "$homepage"
+
+          analysis_json="$(curl --fail --silent --show-error --location \
+            --max-time 20 -H 'Content-Type: application/json' \
+            -d '{"input":"TypeError: Cannot read properties of undefined (reading map)"}' \
+            "$base_url/api/analyze")"
+          printf '%s' "$analysis_json" | jq --exit-status 'type == "object" and length > 0'
+          echo "Railway production smoke checks passed."
