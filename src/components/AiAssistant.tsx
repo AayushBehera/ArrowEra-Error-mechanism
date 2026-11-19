@@ -161,7 +161,7 @@ export function AiAssistant({ projectContext }: { projectContext: string }) {
         </span>
         <span className="text-left">
           <span className="block text-xs font-semibold tracking-wide">AI Copilot</span>
-          <span className="block text-[9px] text-violet-200/60">{status?.configured ? 'Repository context ' + (projectContext ? 'attached' : 'not connected')' : 'Configure API key'}</span>
+          <span className="block text-[9px] text-violet-200/60">{status?.configured ? (projectContext ? 'Repository context attached' : 'No project connected') : 'Configure API key'}</span>
         </span>
       </button>
     </>
