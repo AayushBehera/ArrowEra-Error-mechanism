@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit",
     "test": "node --test",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "smoke": "node --test tests/production-smoke.mjs"
   },
   "dependencies": {
     "react": "^19.2.6",
