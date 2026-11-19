@@ -13,8 +13,9 @@ import { StatsDashboard } from './components/StatsDashboard.tsx'
 import { OperationsWorkspace } from './components/OperationsWorkspace.tsx'
 import type { WorkspacePage } from './components/OperationsWorkspace.tsx'
 import { AiAssistant } from './components/AiAssistant.tsx'
+import { RepositoryAudit } from './components/RepositoryAudit.tsx'
 
-type Page = WorkspacePage | 'errors'
+type Page = WorkspacePage | 'errors' | 'repository'
 
 function uid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -28,6 +29,7 @@ const navigation: { id: Page; label: string; icon: string; group: string }[] = [
   { id: 'errors', label: 'Error triage', icon: '⌘', group: 'Workspace' },
   { id: 'pipelines', label: 'Pipelines', icon: '⇄', group: 'Delivery' },
   { id: 'services', label: 'Services & topology', icon: '⌬', group: 'Delivery' },
+  { id: 'repository', label: 'Repository audit', icon: '⌕', group: 'Delivery' },
 ]
 
 export default function App() {
