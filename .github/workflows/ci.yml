@@ -32,10 +32,12 @@ jobs:
         run: npm run typecheck
       - name: Lint
         run: npm run lint
-      - name: Test
+      - name: Unit and backend integration tests
         run: npm test
       - name: Production build
         run: npm run build
+      - name: Production smoke test
+        run: npm run smoke
       - name: Upload production build
         uses: actions/upload-artifact@v4
         with:

@@ -38,6 +38,7 @@ The Vite development server proxies `/api` requests to the backend on port 3001.
 | `npm run typecheck` | Run TypeScript checks |
 | `npm run lint` | Run ESLint |
 | `npm test` | Run analyzer and backend integration tests |
+| `npm run smoke` | Verify built static assets and API against the production server |
 
 ## API
 
@@ -66,12 +67,13 @@ Input is limited to 50,000 characters and request bodies to 64 KB. Analysis requ
 3. Railway detects `railway.json`, runs `npm ci && npm run build`, then starts `npm run start:backend`.
 4. Configure a public domain in Railway.
 5. Confirm the deployment health check succeeds at `/api/health`.
+6. Run the post-deployment checks in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 The service binds to `0.0.0.0` and uses Railway's `PORT` environment variable. No database or secrets are required for this initial release. Railway deployment is configured through the Railway GitHub integration; GitHub Actions validates pull requests before merge.
 
 ## CI and security automation
 
-GitHub Actions validates type-checking, lint, tests and the production build on pushes and pull requests. The build output is uploaded as a short-lived artifact. CodeQL scans JavaScript/TypeScript, and Dependabot checks npm and GitHub Actions dependencies weekly. GitHub Dependency Review can be enabled after turning on the repository Dependency Graph in Settings → Security.
+GitHub Actions validates type-checking, lint, tests, production build and a production-server smoke test on pushes and pull requests. The build output is uploaded as a short-lived artifact. CodeQL scans JavaScript/TypeScript, and Dependabot checks npm and GitHub Actions dependencies weekly. GitHub Dependency Review can be enabled after turning on the repository Dependency Graph in Settings → Security.
 
 ## Data and privacy
 
