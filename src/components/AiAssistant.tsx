@@ -5,11 +5,11 @@ import type { AiStatus, ChatMessage } from '../api/operations.ts'
 const starter: ChatMessage[] = [
   {
     role: 'assistant',
-    content: 'I am the ArrowEra operations copilot. Once an API key is configured, I can help investigate error traces, explain pipeline failures, and suggest safe remediation steps.',
+    content: 'I am the ArrowEra engineering copilot. I use the connected repository and deployment context to investigate issues and prepare code fixes for review.',
   },
 ]
 
-export function AiAssistant() {
+export function AiAssistant({ projectContext }: { projectContext: string }) {
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState<AiStatus | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>(starter)
@@ -42,7 +42,7 @@ export function AiAssistant() {
     setDraft('')
     setSending(true)
     try {
-      const reply = await sendAiMessage(next.slice(-12))
+      const reply = await sendAiMessage(next.slice(-12), projectContext)
       setMessages((current) => [...current, { role: 'assistant', content: reply.answer }])
     } catch (error) {
       setMessages((current) => [...current, {
@@ -71,7 +71,7 @@ export function AiAssistant() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-100">ArrowEra Copilot</p>
-                <p className="text-[11px] text-slate-500">Infrastructure & error intelligence</p>
+                <p className="text-[11px] text-slate-500">Repository-aware engineering & remediation</p>
               </div>
             </div>
             <button type="button" onClick={() => setOpen(false)} aria-label="Close assistant" className="rounded-lg p-2 text-slate-500 hover:bg-slate-800 hover:text-slate-200">
@@ -111,7 +111,7 @@ export function AiAssistant() {
               onChange={(event) => setDraft(event.target.value)}
               rows={2}
               maxLength={4000}
-              placeholder={status?.configured ? 'Ask about an incident or pipeline…' : 'Chat becomes available after the API key is added'}
+              placeholder={status?.configured ? (projectContext ? 'Ask about this application or request a code fix…' : 'Connect a repository to add project context…') : 'Chat becomes available after the API key is added'}
               disabled={!status?.configured || sending}
               className="max-h-28 min-h-11 flex-1 resize-none rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2.5 text-xs text-slate-200 outline-none placeholder:text-slate-600 focus:border-violet-500/60 disabled:cursor-not-allowed disabled:opacity-50"
             />
@@ -139,7 +139,7 @@ export function AiAssistant() {
         </span>
         <span className="text-left">
           <span className="block text-xs font-semibold tracking-wide">AI Copilot</span>
-          <span className="block text-[9px] text-violet-200/60">{status?.configured ? 'Configured · inference not yet tested' : 'Configure API key'}</span>
+          <span className="block text-[9px] text-violet-200/60">{status?.configured ? 'Repository context ' + (projectContext ? 'attached' : 'not connected')' : 'Configure API key'}</span>
         </span>
       </button>
     </>
