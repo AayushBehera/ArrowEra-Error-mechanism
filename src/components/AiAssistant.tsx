@@ -42,7 +42,7 @@ export function AiAssistant({ projectContext }: { projectContext: string }) {
     setFixNotice(null)
     try {
       const result = await createRepositoryFix(match[1], issue, projectContext)
-      setFixNotice('Pull request #' + result.pullRequestNumber + ' created with ' + result.files.length + ' file change(s). Review it before merging: ' + result.pullRequestUrl)
+      setFixNotice('Fix branch ' + result.branch + ' created with ' + result.files.length + ' file change(s). GitHub Actions validation must pass before a pull request is opened. Track validation: ' + (result.validationWorkflowUrl || 'GitHub Actions'))
       setMessages((current) => [...current, { role: 'assistant', content: 'I prepared a fix branch and opened pull request #' + result.pullRequestNumber + '. No changes were merged into the default branch. Review the pull request and run your checks before merging.\n' + result.pullRequestUrl }])
       setDraft('')
     } catch (error) {
