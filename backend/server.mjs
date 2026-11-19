@@ -12,7 +12,6 @@ const RATE_LIMIT_WINDOW_MS = 60_000
 const RATE_LIMIT_MAX = 30
 const AI_RATE_LIMIT_MAX = 10
 const rateLimits = new Map()
-const startedAt = Date.now()
 
 let requestCount = 0
 let analysisCount = 0
