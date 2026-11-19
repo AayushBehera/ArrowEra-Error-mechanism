@@ -30,18 +30,23 @@ const MIME_TYPES = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
   '.ico': 'image/x-icon',
   '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
 }
 
-function sendJson(response, status, payload) {
+function sendJson(response, status, payload, method = 'GET') {
+  const body = JSON.stringify(payload)
   response.writeHead(status, {
     'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store',
+    'content-length': Buffer.byteLength(body),
   })
-  response.end(JSON.stringify(payload))
+  response.end(method === 'HEAD' ? undefined : body)
 }
 
 function applySecurityHeaders(response) {
@@ -78,6 +83,11 @@ async function readJson(request) {
   const contentType = request.headers['content-type'] || ''
   if (!contentType.toLowerCase().includes('application/json')) {
     return { error: { status: 415, message: 'Content-Type must be application/json.' } }
+  }
+
+  const declaredLength = Number(request.headers['content-length'])
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
+    return { error: { status: 413, message: 'Request body exceeds the 64 KB limit.' } }
   }
 
   const chunks = []
@@ -381,38 +391,55 @@ async function checkDeployment(deploymentUrl) {
   }
 }
 
-async function serveStatic(pathname, response) {
+async function writeStaticFile(target, response, method, cacheControl) {
+  const body = await readFile(target)
+  response.writeHead(200, {
+    'content-type': MIME_TYPES[extname(target)] || 'application/octet-stream',
+    'content-length': body.byteLength,
+    'cache-control': cacheControl,
+  })
+  response.end(method === 'HEAD' ? undefined : body)
+}
+
+async function serveStatic(pathname, response, method) {
   let decodedPath
   try {
     decodedPath = decodeURIComponent(pathname)
   } catch {
-    sendJson(response, 400, { error: 'Invalid URL path.' })
+    sendJson(response, 400, { error: 'Invalid URL path.' }, method)
     return
   }
 
   const relativePath = decodedPath === '/' ? 'index.html' : decodedPath.replace(/^\/+/, '')
-  let target = resolve(DIST, relativePath)
+  const target = resolve(DIST, relativePath)
   if (target !== DIST && !target.startsWith(DIST + sep)) {
-    sendJson(response, 403, { error: 'Forbidden.' })
+    sendJson(response, 403, { error: 'Forbidden.' }, method)
     return
   }
 
   try {
-    const details = await stat(target)
-    if (details.isDirectory()) target = resolve(target, 'index.html')
-    const body = await readFile(target)
-    response.writeHead(200, {
-      'content-type': MIME_TYPES[extname(target)] || 'application/octet-stream',
-      'cache-control': target.endsWith('index.html') ? 'no-cache' : 'public, max-age=3600',
-    })
-    response.end(body)
+    let resolvedTarget = target
+    const details = await stat(resolvedTarget)
+    if (details.isDirectory()) resolvedTarget = resolve(resolvedTarget, 'index.html')
+    const isHtml = resolvedTarget.endsWith('index.html')
+    const isHashedAsset = /-[A-Za-z0-9_-]{8,}\./.test(resolvedTarget)
+    await writeStaticFile(
+      resolvedTarget,
+      response,
+      method,
+      isHtml ? 'no-cache' : isHashedAsset ? 'public, max-age=31536000, immutable' : 'public, max-age=3600',
+    )
   } catch {
+    // Missing asset requests must not silently receive index.html with a 200 response.
+    if (extname(relativePath) || relativePath.startsWith('assets/')) {
+      sendJson(response, 404, { error: 'Static asset not found.' }, method)
+      return
+    }
+
     try {
-      const body = await readFile(resolve(DIST, 'index.html'))
-      response.writeHead(200, { 'content-type': MIME_TYPES['.html'], 'cache-control': 'no-cache' })
-      response.end(body)
+      await writeStaticFile(resolve(DIST, 'index.html'), response, method, 'no-cache')
     } catch {
-      sendJson(response, 503, { error: 'Frontend build is unavailable. Run npm run build first.' })
+      sendJson(response, 503, { error: 'Frontend build is unavailable. Run npm run build first.' }, method)
     }
   }
 }
@@ -423,6 +450,7 @@ export function createAppServer() {
     applySecurityHeaders(response)
     requestCount += 1
 
+    try {
     const url = new URL(request.url || '/', 'http://localhost')
     const { pathname } = url
 
@@ -919,7 +947,15 @@ export function createAppServer() {
       return
     }
 
-    await serveStatic(pathname, response)
+      await serveStatic(pathname, response, request.method || 'GET')
+    } catch (error) {
+      console.error('Request failed:', error)
+      if (response.headersSent) {
+        response.destroy(error instanceof Error ? error : undefined)
+        return
+      }
+      sendJson(response, 500, { error: 'The server could not complete this request.' })
+    }
   })
 }
 
