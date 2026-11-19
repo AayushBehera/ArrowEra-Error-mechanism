@@ -13,9 +13,9 @@ import { StatsDashboard } from './components/StatsDashboard.tsx'
 import { OperationsWorkspace } from './components/OperationsWorkspace.tsx'
 import type { WorkspacePage } from './components/OperationsWorkspace.tsx'
 import { AiAssistant } from './components/AiAssistant.tsx'
-import { RepositoryAudit } from './components/RepositoryAudit.tsx'
+import { ProjectWorkspace } from './components/ProjectWorkspace.tsx'
 
-type Page = WorkspacePage | 'errors' | 'repository'
+type Page = WorkspacePage | 'errors'
 
 function uid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -27,13 +27,12 @@ function uid(): string {
 const navigation: { id: Page; label: string; icon: string; group: string }[] = [
   { id: 'overview', label: 'Overview', icon: '▦', group: 'Workspace' },
   { id: 'errors', label: 'Error triage', icon: '⌘', group: 'Workspace' },
-  { id: 'pipelines', label: 'Pipelines', icon: '⇄', group: 'Delivery' },
-  { id: 'services', label: 'Services & topology', icon: '⌬', group: 'Delivery' },
-  { id: 'repository', label: 'Repository audit', icon: '⌕', group: 'Delivery' },
+
 ]
 
 export default function App() {
   const [page, setPage] = useState<Page>('overview')
+  const [projectContext, setProjectContext] = useState('')
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
@@ -165,7 +164,7 @@ export default function App() {
                 <span>/</span>
                 <span className="truncate text-slate-400">{activeLabel}</span>
               </div>
-              <p className="mt-1 truncate text-sm font-semibold text-slate-100">Error intelligence & operations</p>
+              <p className="mt-1 truncate text-sm font-semibold text-slate-100">Repository intelligence & automated DevOps</p>
             </div>
             <div className="flex shrink-0 items-center gap-2 sm:gap-4">
               <div className="hidden text-right sm:block">
@@ -189,8 +188,8 @@ export default function App() {
         </header>
 
         <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 xl:px-8">
-          {page === 'repository' ? (
-            <RepositoryAudit />
+          {page === 'overview' ? (
+            <ProjectWorkspace onProjectContext={setProjectContext} />
           ) : page !== 'errors' ? (
             <OperationsWorkspace
               page={page}
@@ -230,7 +229,7 @@ export default function App() {
           ARROWERA ERROR MECHANISM · NODE RUNTIME · {new Date().getFullYear()}
         </footer>
       </div>
-      <AiAssistant />
+      <AiAssistant projectContext={projectContext} />
     </div>
   )
 }
