@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchAiStatus, sendAiMessage } from '../api/operations.ts'
+import { createRepositoryFix, fetchAiStatus, sendAiMessage } from '../api/operations.ts'
 import type { AiStatus, ChatMessage } from '../api/operations.ts'
 
 const starter: ChatMessage[] = [
@@ -15,6 +15,8 @@ export function AiAssistant({ projectContext }: { projectContext: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>(starter)
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
+  const [fixing, setFixing] = useState(false)
+  const [fixNotice, setFixNotice] = useState<string | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -31,6 +33,22 @@ export function AiAssistant({ projectContext }: { projectContext: string }) {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, open])
+
+  async function prepareFix() {
+    const issue = draft.trim()
+    const match = projectContext.match(/Repository: (https:\/\/github\.com\/[^\\s]+)/)
+    if (!issue || !match || fixing || !status?.configured) return
+    setFixing(true)
+    setFixNotice(null)
+    try {
+      const result = await createRepositoryFix(match[1], issue, projectContext)
+      setFixNotice('Pull request #' + result.pullRequestNumber + ' created with ' + result.files.length + ' file change(s). Review it before merging: ' + result.pullRequestUrl)
+      setMessages((current) => [...current, { role: 'assistant', content: 'I prepared a fix branch and opened pull request #' + result.pullRequestNumber + '. No changes were merged into the default branch. Review the pull request and run your checks before merging.\n' + result.pullRequestUrl }])
+      setDraft('')
+    } catch (error) {
+      setFixNotice(error instanceof Error ? error.message : 'Could not prepare repository fix.')
+    } finally { setFixing(false) }
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -105,7 +123,8 @@ export function AiAssistant({ projectContext }: { projectContext: string }) {
             </div>
           )}
 
-          <form onSubmit={submit} className="flex items-end gap-2 border-t border-slate-800 p-3">
+          {fixNotice && <div className="mx-3 mb-2 break-words rounded-lg border border-violet-400/20 bg-violet-500/5 px-3 py-2 text-[10px] leading-relaxed text-violet-200">{fixNotice}</div>}
+          <form onSubmit={submit} className="flex flex-col gap-2 border-t border-slate-800 p-3">
             <textarea
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
