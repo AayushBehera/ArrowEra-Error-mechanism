@@ -325,6 +325,38 @@ function safeFixPath(path) {
     && !/^\.github\/workflows\//i.test(path)
 }
 
+
+function runProjectEngine(repository, workflows, deployment) {
+  const findings = []
+  const add = (severity, category, title, detail, evidence = []) => findings.push({ severity, category, title, detail, evidence })
+  if (!repository.workflowFiles.length) add('warning', 'CI/CD', 'No GitHub Actions workflow files detected', 'No workflow definition was found under .github/workflows in the inspected repository tree.', [])
+  if (!repository.testFiles.length) add('warning', 'Testing', 'No test files detected', 'The repository tree did not reveal conventional test or spec paths. This is a discovery heuristic, not proof that tests do not exist.', [])
+  if (!repository.dependencyFiles.length) add('info', 'Dependencies', 'No dependency lockfile detected', 'No common dependency lockfile was found in the repository tree.', [])
+  if (!repository.license || repository.license === 'Not specified') add('warning', 'Governance', 'Repository license is not specified', 'The GitHub repository metadata does not report an SPDX license.')
+  if (repository.archived) add('critical', 'Repository', 'Repository is archived', 'GitHub marks this repository as archived; pushes and remediation may be restricted.')
+  if (deployment && !deployment.healthy) add('critical', 'Runtime', 'Deployment health check failed', deployment.error || ('Deployment returned HTTP ' + deployment.status), [deployment.url])
+  if (!deployment) add('info', 'Runtime', 'No deployment URL configured', 'Add the live application URL to enable runtime health checks.')
+  const failedRuns = workflows.filter((run) => run.conclusion === 'failure')
+  if (failedRuns.length) add('critical', 'CI/CD', failedRuns.length + ' recent workflow run(s) failed', 'At least one of the latest GitHub Actions runs has a failure conclusion.', failedRuns.map((run) => run.url).slice(0, 5))
+  if (repository.treeTruncated) add('warning', 'Coverage', 'GitHub truncated the repository tree response', 'The recursive tree exceeded GitHub response limits; repository structure coverage may be incomplete.')
+  if (!repository.deploymentFiles.length) add('info', 'Deployment', 'No common deployment manifest detected', 'No Dockerfile, Compose, Render, Vercel, Fly.io or Procfile manifest was found in the repository tree.')
+  const rank = { critical: 0, warning: 1, info: 2 }
+  findings.sort((a, b) => rank[a.severity] - rank[b.severity])
+  return {
+    status: findings.some((f) => f.severity === 'critical') ? 'attention' : findings.some((f) => f.severity === 'warning') ? 'review' : 'healthy',
+    summary: { critical: findings.filter((f) => f.severity === 'critical').length, warning: findings.filter((f) => f.severity === 'warning').length, info: findings.filter((f) => f.severity === 'info').length },
+    checks: [
+      { name: 'Repository metadata', status: 'passed', detail: 'GitHub repository metadata and default branch retrieved.' },
+      { name: 'Source/config discovery', status: repository.inspectedFiles.length ? 'passed' : 'warning', detail: repository.inspectedFiles.length + ' selected source/configuration files inspected.' },
+      { name: 'CI/CD inventory', status: repository.workflowFiles.length ? 'passed' : 'warning', detail: repository.workflowFiles.length + ' workflow definition(s) found.' },
+      { name: 'Test discovery', status: repository.testFiles.length ? 'passed' : 'warning', detail: repository.testFiles.length + ' test path(s) found.' },
+      { name: 'Runtime endpoint', status: deployment ? (deployment.healthy ? 'passed' : 'failed') : 'not_configured', detail: deployment ? (deployment.error || ('HTTP ' + deployment.status + ' in ' + deployment.latencyMs + ' ms')) : 'No deployment URL provided.' },
+    ],
+    findings,
+    generatedAt: new Date().toISOString(),
+  }
+}
+
 function validateDeploymentUrl(value) {
   if (typeof value !== 'string' || value.length > 2000) throw new Error('Enter a valid deployment URL.')
   let url
@@ -523,10 +555,12 @@ export function createAppServer() {
             openIssues: repository.openIssues, license: repository.license, archived: repository.archived,
             lastPush: repository.lastPush, fileCount: repository.fileCount, treeTruncated: repository.treeTruncated,
             topLevelDirectories: repository.topLevelDirectories, workflowFiles: repository.workflowFiles,
+            testFiles: repository.testFiles, dependencyFiles: repository.dependencyFiles, deploymentFiles: repository.deploymentFiles,
             inspectedFiles: repository.inspectedFiles.map((file) => ({ path: file.path, content: file.content })),
           },
           workflows, commits, pullRequests, branches,
           deployment: value(4, null),
+          engine: runProjectEngine(repository, workflows, value(4, null)),
           checks: { workflows: requests[0].status === 'fulfilled' ? 'available' : 'unavailable', commits: requests[1].status === 'fulfilled' ? 'available' : 'unavailable', pullRequests: requests[2].status === 'fulfilled' ? 'available' : 'unavailable', branches: requests[3].status === 'fulfilled' ? 'available' : 'unavailable' },
           inspectedAt: new Date().toISOString(),
         })
