@@ -69,12 +69,12 @@ export async function handleIntegrationRequest(request, response, url) {
     const repository = typeof input.repository === 'string' ? input.repository : ''
     const workflow = typeof input.workflow === 'string' ? input.workflow : ''
     const ref = typeof input.ref === 'string' ? input.ref : 'main'
-    if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository) || !/^\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml$/.test(workflow) || !/^[A-Za-z0-9_.\/-]{1,120}$/.test(ref) || ref.includes('..')) {
+    if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository) || !/^[A-Za-z0-9_.-]+\.ya?ml$/.test(workflow) || !/^[A-Za-z0-9_.\/-]{1,120}$/.test(ref) || ref.includes('..')) {
       json(response, 400, { error: 'Provide a valid owner/name repository, workflow file path and branch ref.' })
       return true
     }
     try {
-      const api = 'https://api.github.com/repos/' + repository + '/actions/workflows/' + workflow.split('/').map(encodeURIComponent).join('/') + '/dispatches'
+      const api = 'https://api.github.com/repos/' + repository + '/actions/workflows/' + encodeURIComponent(workflow) + '/dispatches'
       const upstream = await fetch(api, { method: 'POST', headers: { authorization: 'Bearer ' + token, accept: 'application/vnd.github+json', 'content-type': 'application/json', 'x-github-api-version': '2022-11-28', 'user-agent': 'ArrowEra-Workflow-Dispatcher' }, body: JSON.stringify({ ref }), signal: AbortSignal.timeout(12_000) })
       if (!upstream.ok) {
         json(response, upstream.status, { error: 'GitHub workflow dispatch returned HTTP ' + upstream.status + '. Confirm the workflow supports workflow_dispatch and GITHUB_TOKEN has Actions: write.' })
