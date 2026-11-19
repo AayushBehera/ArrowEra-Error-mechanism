@@ -10,7 +10,7 @@
 ## Required GitHub configuration
 Enable Actions. The container workflow needs the repository Actions token to have packages: write; organization package policies can still block publication. The first GHCR package may need its visibility adjusted.
 
-For private repository access, configure GITHUB_TOKEN on the backend with Contents read/write, Pull requests read/write, Actions read and Checks read. Use a fine-grained token scoped only to the target repository.
+For private repository access, configure GITHUB_TOKEN on the backend with Contents read/write, Actions read/write, Checks read and Pull requests read (the workflow's GITHUB_TOKEN opens validated PRs). Use a fine-grained token scoped only to the target repository.
 
 ## Deployment provider configuration
 
