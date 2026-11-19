@@ -119,6 +119,49 @@ function TelemetryChart({ overview }: { overview: OperationsOverview | null }) {
   )
 }
 
+
+function PipelineOutcomeChart({ runs }: { runs: PipelineRun[] }) {
+  const totals = {
+    passed: runs.filter((run) => run.conclusion === 'success').length,
+    failed: runs.filter((run) => run.conclusion === 'failure').length,
+    running: runs.filter((run) => run.status === 'in_progress').length,
+    other: runs.filter((run) => !['success', 'failure'].includes(run.conclusion || '') && run.status !== 'in_progress').length,
+  }
+  const total = Math.max(1, runs.length)
+  const segments = [
+    { label: 'Passed', count: totals.passed, color: '#34d399' },
+    { label: 'Failed', count: totals.failed, color: '#fb7185' },
+    { label: 'Running', count: totals.running, color: '#38bdf8' },
+    { label: 'Other', count: totals.other, color: '#64748b' },
+  ]
+  return (
+    <Panel>
+      <SectionTitle eyebrow="Pipeline analytics" title="Recent execution outcomes" aside={<span className="text-[9px] text-slate-500">Latest {runs.length} runs</span>} />
+      {runs.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-slate-700 p-5 text-center text-[10px] text-slate-500">Outcome distribution appears when GitHub Actions returns workflow runs.</p>
+      ) : (
+        <>
+          <div className="flex h-3 overflow-hidden rounded-full bg-slate-800">
+            {segments.filter((segment) => segment.count > 0).map((segment) => (
+              <span key={segment.label} style={{ width: (segment.count / total * 100) + '%', backgroundColor: segment.color }} />
+            ))}
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {segments.map((segment) => (
+              <div key={segment.label} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: segment.color }} /><span className="text-[9px] text-slate-500">{segment.label}</span></div>
+                <p className="mt-2 font-mono text-xl text-slate-100">{segment.count}</p>
+                <p className="mt-1 text-[9px] text-slate-600">{Math.round(segment.count / total * 100)}% of returned runs</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[9px] text-slate-600">Distribution is calculated from the latest runs returned by GitHub, not the repository's full history.</p>
+        </>
+      )}
+    </Panel>
+  )
+}
+
 function PipelinePanel({ runs, connected, message, compact = false }: { runs: PipelineRun[]; connected: boolean; message: string; compact?: boolean }) {
   const visible = compact ? runs.slice(0, 4) : runs
   return (
@@ -187,7 +230,7 @@ function Topology({ overview, expanded = false }: { overview: OperationsOverview
           </div>
         ))}
       </div>
-      <p className="mt-3 text-[9px] leading-relaxed text-slate-600">The map shows the current application connections. The AI node remains disconnected until a server-side API key is configured.</p>
+      <p className="mt-3 text-[9px] leading-relaxed text-slate-600">The map shows current application connections. AI inference is marked pending until a server-side API key is configured.</p>
     </Panel>
   )
 }
@@ -316,6 +359,7 @@ export function OperationsWorkspace({ page, overview, entries, loading, error, o
             <MetricCard label="Latest conclusion" value={overview?.pipelines[0]?.conclusion?.toUpperCase() ?? '—'} detail={overview?.pipelines[0] ? timeAgo(overview.pipelines[0].updatedAt) : 'No run returned'} tone="border-emerald-400/20 bg-emerald-400/10 text-emerald-300" icon="✓" />
           </div>
           <PipelinePanel runs={overview?.pipelines ?? []} connected={github?.connected ?? false} message={github?.message ?? 'Waiting for GitHub Actions connection.'} />
+          <PipelineOutcomeChart runs={overview?.pipelines ?? []} />
           <Panel>
             <SectionTitle eyebrow="Execution flow" title="How CI/CD telemetry is sourced" />
             <div className="grid gap-3 md:grid-cols-3">
