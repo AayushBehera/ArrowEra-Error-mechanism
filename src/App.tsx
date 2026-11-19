@@ -27,8 +27,6 @@ function uid(): string {
 const navigation: { id: Page; label: string; icon: string; group: string }[] = [
   { id: 'overview', label: 'Overview', icon: '▦', group: 'Workspace' },
   { id: 'errors', label: 'Error triage', icon: '⌘', group: 'Workspace' },
-  { id: 'pipelines', label: 'Pipelines', icon: '⇄', group: 'Delivery' },
-  { id: 'services', label: 'Services & topology', icon: '⌬', group: 'Delivery' },
 
 ]
 
@@ -166,7 +164,7 @@ export default function App() {
                 <span>/</span>
                 <span className="truncate text-slate-400">{activeLabel}</span>
               </div>
-              <p className="mt-1 truncate text-sm font-semibold text-slate-100">Error intelligence & operations</p>
+              <p className="mt-1 truncate text-sm font-semibold text-slate-100">Repository intelligence & automated DevOps</p>
             </div>
             <div className="flex shrink-0 items-center gap-2 sm:gap-4">
               <div className="hidden text-right sm:block">
