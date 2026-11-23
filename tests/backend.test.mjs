@@ -190,12 +190,20 @@ test('GET /api/github/status reports missing server-side token without exposing 
 })
 
 test('workflow dispatch rejects invalid payload values before attempting GitHub access', async () => {
+  const previousToken = process.env.GITHUB_TOKEN
+  process.env.GITHUB_TOKEN = 'test-token'
+  try {
   await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/project/workflows/dispatch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ repository: 'bad-repo', workflow: '../steal.yml', ref: 'main' }),
     })
-    assert.equal(response.status, 503)
+    assert.equal(response.status, 400)
+    assert.match((await response.json()).error, /valid owner\/name/)
   })
+  } finally {
+    if (previousToken === undefined) delete process.env.GITHUB_TOKEN
+    else process.env.GITHUB_TOKEN = previousToken
+  }
 })
