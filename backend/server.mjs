@@ -148,7 +148,7 @@ async function inspectGithubConnection() {
     authorization: 'Bearer ' + token,
   }
   try {
-    const userResponse = await fetch('https://api.github.com/user', { headers, signal: AbortSignal.timeout(8_000) })
+    const userResponse = await fetch('https://api.github.com/user', { headers, signal: AbortSignal.timeout(8000) })
     if (!userResponse.ok) {
       result.message = userResponse.status === 401
         ? 'GitHub rejected GITHUB_TOKEN. Replace it with a valid, unexpired token.'
