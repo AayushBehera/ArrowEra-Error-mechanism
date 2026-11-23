@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { analyze } from './engine/analyzer.ts'
 import type { AnalysisResult, HistoryEntry } from './engine/types.ts'
 import { analyzeWithApi } from './api/analysis.ts'
-import { fetchOperationsOverview } from './api/operations.ts'
-import type { OperationsOverview } from './api/operations.ts'
+import { fetchOperationsOverview, fetchGitHubConnectionStatus } from './api/operations.ts'
+import type { OperationsOverview, GitHubConnectionStatus } from './api/operations.ts'
 import { useHistory } from './hooks/useHistory.ts'
 import { WorkflowStepper } from './components/WorkflowStepper.tsx'
 import { ErrorInput } from './components/ErrorInput.tsx'
@@ -40,6 +40,9 @@ export default function App() {
   const [telemetryError, setTelemetryError] = useState<string | null>(null)
   const [loadingTelemetry, setLoadingTelemetry] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
+  const [githubStatus, setGithubStatus] = useState<GitHubConnectionStatus | null>(null)
+  const [githubLoading, setGithubLoading] = useState(false)
+  const [githubError, setGithubError] = useState<string | null>(null)
   const { entries, add, clear, remove } = useHistory()
 
   useEffect(() => {
@@ -66,6 +69,25 @@ export default function App() {
       active = false
       window.clearInterval(timer)
     }
+  }, [])
+
+  async function refreshGitHubStatus(): Promise<void> {
+    setGithubLoading(true)
+    try {
+      const status = await fetchGitHubConnectionStatus()
+      setGithubStatus(status)
+      setGithubError(null)
+    } catch (error) {
+      setGithubError(error instanceof Error ? error.message : 'GitHub connection status is unavailable.')
+    } finally {
+      setGithubLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void refreshGitHubStatus()
+    const timer = window.setInterval(() => { void refreshGitHubStatus() }, 60_000)
+    return () => window.clearInterval(timer)
   }, [])
 
   async function handleAnalyze(input: string): Promise<void> {
@@ -149,6 +171,24 @@ export default function App() {
               <span className="text-[10px] font-semibold text-slate-300">{apiOnline ? 'API operational' : 'Connecting to API'}</span>
             </div>
             <p className="mt-2 text-[9px] leading-relaxed text-slate-600">Production workspace · Render</p>
+          </div>
+          <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className={'h-2 w-2 rounded-full ' + (githubStatus?.authenticated && githubStatus.repositoryAccessible ? 'bg-emerald-400' : githubStatus?.configured ? 'bg-amber-400' : 'bg-slate-600')} />
+                <span className="text-[10px] font-semibold text-slate-300">GitHub connection</span>
+              </div>
+              <button type="button" onClick={() => void refreshGitHubStatus()} disabled={githubLoading} className="text-[9px] text-violet-300 hover:text-violet-200 disabled:opacity-50">
+                {githubLoading ? 'Checking…' : 'Refresh'}
+              </button>
+            </div>
+            <p className="mt-2 text-[10px] font-medium text-slate-200">
+              {githubStatus?.authenticated && githubStatus.repositoryAccessible ? 'Authenticated · Repository accessible' : githubStatus?.configured ? 'Token configured · Access unverified' : githubStatus ? 'Token not configured' : githubError || 'Checking GitHub…'}
+            </p>
+            {githubStatus?.account && <p className="mt-1 text-[9px] text-slate-500">Account: {githubStatus.account}</p>}
+            {githubStatus && <p className="mt-1 truncate text-[9px] text-slate-600">{githubStatus.repository}</p>}
+            {githubStatus && <p className="mt-1 text-[9px] leading-relaxed text-slate-600">{githubStatus.message}</p>}
+            {githubError && <p role="alert" className="mt-1 text-[9px] text-rose-300">{githubError}</p>}
           </div>
           <p className="mt-4 px-1 text-[9px] text-slate-700">ARROWERA · DEVOPS CONSOLE</p>
         </div>
