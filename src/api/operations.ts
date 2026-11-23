@@ -213,3 +213,23 @@ export async function dispatchWorkflow(repository: string, workflow: string, ref
     body: JSON.stringify({ repository, workflow, ref }),
   }))
 }
+
+
+export interface GitHubConnectionStatus {
+  configured: boolean
+  authenticated: boolean
+  repository: string
+  repositoryAccessible: boolean
+  account: string | null
+  permissions: { contents: string; pullRequests: string; actions: string }
+  scopes: string[]
+  message: string
+  checkedAt: string
+}
+
+export async function fetchGitHubConnectionStatus(): Promise<GitHubConnectionStatus> {
+  return readJson<GitHubConnectionStatus>(await fetch('/api/github/status', {
+    headers: { accept: 'application/json' },
+    cache: 'no-store',
+  }))
+}
