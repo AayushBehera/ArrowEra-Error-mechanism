@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { analyze } from './engine/analyzer.ts'
 import type { AnalysisResult, HistoryEntry } from './engine/types.ts'
 import { analyzeWithApi } from './api/analysis.ts'
@@ -71,7 +71,7 @@ export default function App() {
     }
   }, [])
 
-  async function refreshGitHubStatus(): Promise<void> {
+  const refreshGitHubStatus = useCallback(async (): Promise<void> => {
     setGithubLoading(true)
     try {
       const status = await fetchGitHubConnectionStatus()
@@ -82,13 +82,13 @@ export default function App() {
     } finally {
       setGithubLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     void refreshGitHubStatus()
     const timer = window.setInterval(() => { void refreshGitHubStatus() }, 60_000)
     return () => window.clearInterval(timer)
-  }, [])
+  }, [refreshGitHubStatus])
 
   async function handleAnalyze(input: string): Promise<void> {
     setIsAnalyzing(true)
