@@ -161,7 +161,7 @@ async function inspectGithubConnection() {
     const scopeHeader = userResponse.headers.get('x-oauth-scopes') || ''
     result.scopes = scopeHeader.split(',').map((scope) => scope.trim()).filter(Boolean)
 
-    if (!/^[A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+$/.test(repository)) {
+    if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
       result.message = 'GITHUB_REPOSITORY must use owner/name format.'
       return result
     }
