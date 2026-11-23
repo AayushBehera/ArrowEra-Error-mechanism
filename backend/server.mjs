@@ -165,7 +165,7 @@ async function inspectGithubConnection() {
       result.message = 'GITHUB_REPOSITORY must use owner/name format.'
       return result
     }
-    const repoResponse = await fetch('https://api.github.com/repos/' + repository, { headers, signal: AbortSignal.timeout(8_000) })
+    const repoResponse = await fetch('https://api.github.com/repos/' + repository, { headers, signal: AbortSignal.timeout(8000) })
     if (!repoResponse.ok) {
       result.message = repoResponse.status === 404
         ? 'Token is valid, but the configured repository is not accessible to this token.'
@@ -814,7 +814,7 @@ export function createAppServer() {
         const repoRoot = 'https://api.github.com/repos/' + encodeURIComponent(owner) + '/' + encodeURIComponent(repository)
         const repoMetadata = await githubApi(repoRoot)
         const project = await inspectGithubRepository(parsed.value.repositoryUrl)
-        const evidence = project.inspectedFiles.map((file) => '\n--- ' + file.path + ' ---\n' + file.content).join('\n').slice(0, 28_000)
+        const evidence = project.inspectedFiles.map((file) => '\n--- ' + file.path + ' ---\n' + file.content).join('\n').slice(0, 28000)
         const upstream = await fetch(ai.baseUrl + '/chat/completions', {
           method: 'POST',
           headers: { authorization: 'Bearer ' + ai.apiKey, 'content-type': 'application/json', accept: 'application/json' },
