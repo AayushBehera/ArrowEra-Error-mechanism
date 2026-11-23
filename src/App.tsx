@@ -85,9 +85,12 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    void refreshGitHubStatus()
+    const initialCheck = window.setTimeout(() => { void refreshGitHubStatus() }, 0)
     const timer = window.setInterval(() => { void refreshGitHubStatus() }, 60_000)
-    return () => window.clearInterval(timer)
+    return () => {
+      window.clearTimeout(initialCheck)
+      window.clearInterval(timer)
+    }
   }, [refreshGitHubStatus])
 
   async function handleAnalyze(input: string): Promise<void> {
