@@ -168,3 +168,42 @@ test('POST /api/analyze rate limits a client after 30 requests per minute', asyn
     assert.match((await lastResponse.json()).error, /Too many/)
   })
 })
+
+
+test('GET /api/github/status reports missing server-side token without exposing credentials', async () => {
+  const previousToken = process.env.GITHUB_TOKEN
+  delete process.env.GITHUB_TOKEN
+  try {
+    await withServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/github/status`)
+      const body = await response.json()
+      assert.equal(response.status, 200)
+      assert.equal(body.configured, false)
+      assert.equal(body.authenticated, false)
+      assert.match(body.message, /not configured/)
+      assert.equal(JSON.stringify(body).includes('github_pat_'), false)
+    })
+  } finally {
+    if (previousToken === undefined) delete process.env.GITHUB_TOKEN
+    else process.env.GITHUB_TOKEN = previousToken
+  }
+})
+
+test('workflow dispatch rejects invalid payload values before attempting GitHub access', async () => {
+  const previousToken = process.env.GITHUB_TOKEN
+  process.env.GITHUB_TOKEN = 'test-token'
+  try {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/project/workflows/dispatch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ repository: 'bad-repo', workflow: '../steal.yml', ref: 'main' }),
+    })
+    assert.equal(response.status, 400)
+    assert.match((await response.json()).error, /valid owner\/name/)
+  })
+  } finally {
+    if (previousToken === undefined) delete process.env.GITHUB_TOKEN
+    else process.env.GITHUB_TOKEN = previousToken
+  }
+})

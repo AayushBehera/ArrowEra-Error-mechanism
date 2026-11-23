@@ -124,6 +124,68 @@ function getAiConfig() {
   }
 }
 
+
+async function inspectGithubConnection() {
+  const token = (process.env.GITHUB_TOKEN || '').trim()
+  const repository = (process.env.GITHUB_REPOSITORY || 'AayushBehera/ArrowEra-Error-mechanism').trim()
+  const result = {
+    configured: Boolean(token),
+    authenticated: false,
+    repository,
+    repositoryAccessible: false,
+    account: null,
+    permissions: { contents: 'unknown', pullRequests: 'unknown', actions: 'unknown' },
+    scopes: [],
+    message: token ? 'Checking GitHub credentials.' : 'GITHUB_TOKEN is not configured on the server.',
+    checkedAt: new Date().toISOString(),
+  }
+  if (!token) return result
+
+  const headers = {
+    accept: 'application/vnd.github+json',
+    'x-github-api-version': '2022-11-28',
+    'user-agent': 'ArrowEra-GitHub-Connection-Check',
+    authorization: 'Bearer ' + token,
+  }
+  try {
+    const userResponse = await fetch('https://api.github.com/user', { headers, signal: AbortSignal.timeout(8000) })
+    if (!userResponse.ok) {
+      result.message = userResponse.status === 401
+        ? 'GitHub rejected GITHUB_TOKEN. Replace it with a valid, unexpired token.'
+        : 'GitHub authentication check returned HTTP ' + userResponse.status + '.'
+      return result
+    }
+    const user = await userResponse.json()
+    result.authenticated = true
+    result.account = typeof user.login === 'string' ? user.login : null
+    const scopeHeader = userResponse.headers.get('x-oauth-scopes') || ''
+    result.scopes = scopeHeader.split(',').map((scope) => scope.trim()).filter(Boolean)
+
+    if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
+      result.message = 'GITHUB_REPOSITORY must use owner/name format.'
+      return result
+    }
+    const repoResponse = await fetch('https://api.github.com/repos/' + repository, { headers, signal: AbortSignal.timeout(8000) })
+    if (!repoResponse.ok) {
+      result.message = repoResponse.status === 404
+        ? 'Token is valid, but the configured repository is not accessible to this token.'
+        : 'Repository access check returned HTTP ' + repoResponse.status + '.'
+      return result
+    }
+    const repo = await repoResponse.json()
+    result.repositoryAccessible = true
+    const permissions = repo.permissions || {}
+    result.permissions.contents = permissions.push ? 'read/write' : permissions.pull ? 'read-only' : 'not-granted'
+    result.permissions.pullRequests = permissions.push ? 'likely-read/write' : 'read-only-or-unknown'
+    result.permissions.actions = 'not-verifiable-from-repository-metadata'
+    result.message = 'GitHub token authenticated successfully and can access the configured repository. Workflow dispatch additionally requires Actions: write; remediation requires Contents: write and Pull requests: write.'
+    return result
+  } catch (error) {
+    result.message = error?.name === 'TimeoutError' ? 'GitHub credential check timed out.' : 'GitHub credential check could not reach the API.'
+    return result
+  }
+}
+
 function recordMetric() {
   const memory = process.memoryUsage()
   metricHistory.push({
@@ -503,6 +565,12 @@ export function createAppServer() {
       return
     }
 
+    if (pathname === '/api/github/status' && request.method === 'GET') {
+      const status = await inspectGithubConnection()
+      sendJson(response, 200, status)
+      return
+    }
+
     if (pathname === '/api/ai/status' && request.method === 'GET') {
       const ai = getAiConfig()
       sendJson(response, 200, {
@@ -746,7 +814,7 @@ export function createAppServer() {
         const repoRoot = 'https://api.github.com/repos/' + encodeURIComponent(owner) + '/' + encodeURIComponent(repository)
         const repoMetadata = await githubApi(repoRoot)
         const project = await inspectGithubRepository(parsed.value.repositoryUrl)
-        const evidence = project.inspectedFiles.map((file) => '\n--- ' + file.path + ' ---\n' + file.content).join('\n').slice(0, 28_000)
+        const evidence = project.inspectedFiles.map((file) => '\n--- ' + file.path + ' ---\n' + file.content).join('\n').slice(0, 28000)
         const upstream = await fetch(ai.baseUrl + '/chat/completions', {
           method: 'POST',
           headers: { authorization: 'Bearer ' + ai.apiKey, 'content-type': 'application/json', accept: 'application/json' },
